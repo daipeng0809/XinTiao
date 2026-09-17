@@ -2,7 +2,14 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace XinTiao.ViewModels;
 
-public partial class MainViewModel : ViewModelBase
+public partial class MainViewModel : ObservableObject
 {
-    [ObservableProperty] public partial string Greeting { get; set; } = "Welcome to Avalonia!";
+    [ObservableProperty] 
+    private string _greeting = "Welcome to Avalonia!";
+    
+    [ObservableProperty]
+    private string _displayText = string.Empty;
+    
+    [ObservableProperty]
+    private string _sendText = string.Empty;
 }
