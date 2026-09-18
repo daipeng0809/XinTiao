@@ -1,0 +1,14 @@
+{
+  "AppName": "Aerial Electric Field Detector",
+  "AppVersion": "V1.0",
+  "OnlineMap": true,
+  "ComPort": "COM1",
+  "BaudRate": 9600,
+  "LocalLat": 39,
+  "LocalLon": 116,
+  "TimeZone": 0,
+  "IncorrectValue": false,
+  "MapMax": 4,
+  "MapMin": 11,
+  "IsTest": false
+}

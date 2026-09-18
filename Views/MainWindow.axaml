@@ -37,13 +37,19 @@
                     <!--这里写设置内容-->
                     <TabControl >
                         <TabItem Header="串口">
-                            <TextBlock >This is tab 1 content</TextBlock>
+                            <Grid>
+                                
+                            </Grid>
                         </TabItem>
                         <TabItem Header="TCP">
-                            <TextBlock >This is tab 2 content</TextBlock>
+                            <Grid>
+                                
+                            </Grid>
                         </TabItem>
                         <TabItem Header="UDP">
-                            <TextBlock >This is tab 2 content</TextBlock>
+                            <Grid>
+                                
+                            </Grid>
                         </TabItem>
                     </TabControl>
                 </Border>
