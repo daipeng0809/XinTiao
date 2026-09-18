@@ -34,7 +34,18 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Border BorderBrush="#D6E2EF" Theme="{StaticResource CardBorder}" Margin="10 0 2 0" Grid.Column="0" >
-                <!--这里写设置内容-->
+                    <!--这里写设置内容-->
+                    <TabControl >
+                        <TabItem Header="串口">
+                            <TextBlock >This is tab 1 content</TextBlock>
+                        </TabItem>
+                        <TabItem Header="TCP">
+                            <TextBlock >This is tab 2 content</TextBlock>
+                        </TabItem>
+                        <TabItem Header="UDP">
+                            <TextBlock >This is tab 2 content</TextBlock>
+                        </TabItem>
+                    </TabControl>
                 </Border>
                 <GridSplitter Grid.Column="1" ResizeDirection="Columns"/>
                 <Grid Grid.Column="2" >
