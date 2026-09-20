@@ -6,8 +6,6 @@ using System.Threading;
 
 namespace XinTiao;
 
-public class HelpSerialPort_
-{
     /// <summary>
     /// 串口帮助类 - 使用独立读取线程避免大数据量丢包
     /// </summary>
@@ -235,4 +233,3 @@ public class HelpSerialPort_
             GC.SuppressFinalize(this);
         }
     }
-}

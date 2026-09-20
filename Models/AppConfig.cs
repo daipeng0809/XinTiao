@@ -11,9 +11,9 @@ public class AppConfig
     [JsonPropertyName("OnlineMap")]
     public bool OnlineMap { get; set; } = true;
     [JsonPropertyName("ComPort")]
-    public string DefaultComPort { get; set; } = "COM1";
+    public string ComPort { get; set; } = "COM1";
     [JsonPropertyName("BaudRate")]
-    public int DefaultBaudRate { get; set; } = 9600;
+    public int BaudRate { get; set; } = 9600;
     [JsonPropertyName("LocalLat")]
     public float LocalLat { get; set; } = 39.0F;//本地纬度
     [JsonPropertyName("LocalLon")]

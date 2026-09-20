@@ -1,6 +1,8 @@
+using System.IO;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using XinTiao.Models;
 using XinTiao.ViewModels;
 using XinTiao.Views;
 
@@ -13,6 +15,9 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
     }
 
+    public static readonly string LuJingAppConfig= Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "Config", "AppConfig.json");
+    public static AppConfig AppConfig = HelpJson.Read(LuJingAppConfig, AppJsonContext.Default.AppConfig) ??  new AppConfig();
+    
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
