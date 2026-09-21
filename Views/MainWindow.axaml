@@ -36,7 +36,7 @@
                 <Border BorderBrush="#D6E2EF" Theme="{StaticResource CardBorder}" Margin="10 0 2 0" Grid.Column="0" >
                     <!--这里写设置内容-->
                     <TabControl >
-                        <TabItem Header="串口">
+                        <TabItem Name="Tou_Com" Header="串口">
                             <StackPanel Margin="0 10 0 0" Spacing="10">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock VerticalAlignment="Center" Text="请选择串口："></TextBlock>
@@ -93,12 +93,12 @@
                                     </StackPanel>
                                 </StackPanel>
                         </TabItem>
-                        <TabItem Header="TCP">
+                        <TabItem Name="Tou_Tcp" Header="TCP">
                             <Grid>
                                 
                             </Grid>
                         </TabItem>
-                        <TabItem Header="UDP">
+                        <TabItem Name="Tou_Udp" Header="UDP">
                             <Grid>
                                 
                             </Grid>
@@ -131,8 +131,8 @@
                             </Grid.ColumnDefinitions>
                             <TextBox Grid.Column="0" PlaceholderText="请输入内容..." Text="{Binding SendText}" Background="Transparent" Margin="-10 -10 0 -10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Classes="TextArea ClearButton"  />
                             <Grid Grid.Column="1">
-                                <ToggleSwitch  OnContent="文本发送" OffContent="HEX发送" IsChecked="True" Margin="0 -10 -15 0" VerticalAlignment="Top" HorizontalAlignment="Right" />
-                                <Button Content="发    送" Margin="0 20 -5 0" Classes="Success" Width="100" Theme="{StaticResource SolidButton}" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+                                <ToggleSwitch  OnContent="文本发送" IsCheckedChanged="ToggleButton_OnIsCheckedChanged3" OffContent="HEX发送" IsChecked="True" Margin="0 -10 -15 0" VerticalAlignment="Top" HorizontalAlignment="Right" />
+                                <Button Content="发    送" Click="Button_OnClick2" Margin="0 20 -5 0" Classes="Success" Width="100" Theme="{StaticResource SolidButton}" VerticalAlignment="Top" HorizontalAlignment="Right"/>
                                 <Button Content="定时发送" Margin="0 60 -5 0" Classes="Success" Width="100" Theme="{StaticResource SolidButton}" VerticalAlignment="Top" HorizontalAlignment="Right"/>
 
                             </Grid>
