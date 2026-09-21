@@ -205,6 +205,9 @@ public partial class MainWindow : UrsaWindow
 
     private void Button_OnClick2(object? sender, RoutedEventArgs e)
     {
+        if (_model.SendText.Length < 1)
+            return;
+        
         if (_sendText)
         {
             byte[] bb = System.Text.Encoding.UTF8.GetBytes(_model.SendText);
@@ -244,7 +247,7 @@ public partial class MainWindow : UrsaWindow
 
         if (string.IsNullOrWhiteSpace(input))
         {
-            error = "输入不能为空，请输入十六进制字符串，例如：ff FF aa 11 22";
+            error = "输入不能为空，请输入十六进制字符串，例如：aa bb 11 22";
             return false;
         }
 
@@ -254,7 +257,7 @@ public partial class MainWindow : UrsaWindow
         // 2. 长度必须是偶数，否则无法按两个字符切一个字节
         if (hex.Length % 2 != 0)
         {
-            error = $"去掉空格后长度为 {hex.Length}（奇数），无法按每两个字符组成一个字节。\n" +
+            error = $"去掉空格后长度为 {hex.Length}（奇数），无法按每两个字符组成一个字节。" + Environment.NewLine +
                     $"请检查是否漏写了一位，例如 “aab” 应该是 “aabb”。";
             return false;
         }
@@ -268,7 +271,7 @@ public partial class MainWindow : UrsaWindow
                 int byteIndex = i / 2;   // 第几个字节（从 0 开始）
                 int charIndex = i % 2;   // 字节内第几位
                 error = $"第 {i + 1} 个字符 “{hex[i]}” 不是合法的十六进制字符，" +
-                        $"只能是 0-9、A-F、a-f。\n" +
+                        $"只能是 0-9、A-F、a-f。" + Environment.NewLine +
                         $"（位于第 {byteIndex + 1} 个字节的第 {charIndex + 1} 位）";
                 return false;
             }
