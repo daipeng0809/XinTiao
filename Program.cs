@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using System;
+using Avalonia.Media;
 
 namespace XinTiao;
 
@@ -20,5 +21,14 @@ sealed class Program
             .WithDeveloperTools()
 #endif
             .WithInterFont()
+            // .With(new FontManagerOptions
+            // {
+            //     DefaultFamilyName = "Noto Sans CJK SC",
+            //     FontFallbacks = new[]
+            //     {
+            //         new FontFallback { FontFamily = "Noto Sans CJK SC" },
+            //         new FontFallback { FontFamily = "WenQuanYi Micro Hei" },
+            //     },
+            // })
             .LogToTrace();
 }
