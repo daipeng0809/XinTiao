@@ -21,6 +21,7 @@ sealed class Program
             .WithDeveloperTools()
 #endif
             .WithInterFont()
+            //为了应对银河麒麟v10桌面版默认字体问题问题
             // .With(new FontManagerOptions
             // {
             //     DefaultFamilyName = "Noto Sans CJK SC",

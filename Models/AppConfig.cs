@@ -5,27 +5,27 @@ namespace XinTiao.Models;
 public class AppConfig
 {
     [JsonPropertyName("AppName")]
-    public string AppName { get; set; } = "Aerial Electric Field Detector";//Aerial Electric Field Detector
+    public string AppName { get; set; } = "信息调试助手r";
     [JsonPropertyName("AppVersion")]
     public string AppVersion { get; set; } = "V1.0";
-    [JsonPropertyName("OnlineMap")]
-    public bool OnlineMap { get; set; } = true;
+    
+    [JsonPropertyName("ThemeVariant")]
+    public string ThemeVariant { get; set; } = "Default";
+    
+    [JsonPropertyName("TabItemIndex")]
+    public int TabItemIndex { get; set; } = 0;//com为0，tcp为1，udp为2
+    
     [JsonPropertyName("ComPort")]
     public string ComPort { get; set; } = "COM1";
     [JsonPropertyName("BaudRate")]
-    public int BaudRate { get; set; } = 9600;
-    [JsonPropertyName("LocalLat")]
-    public float LocalLat { get; set; } = 39.0F;//本地纬度
-    [JsonPropertyName("LocalLon")]
-    public float LocalLon { get; set; } = 116.0F;//本地经度
-    [JsonPropertyName("TimeZone")]
-    public int TimeZone { get; set; } = 0;//添加时区值
-    [JsonPropertyName("IncorrectValue")]
-    public bool IncorrectValue { get; set; } = false;//错误值过滤
-    [JsonPropertyName("MapMax")]
-    public int MapMax { get; set; } = 4;//地图最小值
-    [JsonPropertyName("MapMin")]
-    public int MapMin { get; set; } = 11;//地图最大值
-    [JsonPropertyName("IsTest")]
-    public bool IsTest { get; set; } = false;//是否为测试
+    public string BaudRate { get; set; } = "9600";
+    
+    [JsonPropertyName("DataBits")]
+    public int DataBits { get; set; } = 8;
+    [JsonPropertyName("Parity")]
+    public string Parity { get; set; } = "None";
+    [JsonPropertyName("StopBits")]
+    public string StopBits { get; set; } = "One";
+    
+    
 }

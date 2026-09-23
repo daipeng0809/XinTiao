@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.Ports;
@@ -31,16 +32,49 @@ public partial class MainWindow : UrsaWindow
     private bool _displayTime = true;//显示时间
     private bool _sendText = true;//文本发送
 
+    private bool _startupOk = false;//启动完成
+    
     private void Control_OnLoaded(object? sender, RoutedEventArgs e)
     {
         DataContext  = _model;
         
         _model.ComName = System.IO.Ports.SerialPort.GetPortNames();
         _port.ErrorOccurred += PortOnErrorOccurred;
+
+        //先设置按钮状态
+        ZhuTi.IsChecked = App.AppConfig.ThemeVariant == "Light" ? true : false;
         
+        _startupOk = true;
+        //-----------------------------------------
         
+        Application.Current!.RequestedThemeVariant = App.AppConfig.ThemeVariant switch
+        {
+            "Light" => ThemeVariant.Light,
+            "Dark"  => ThemeVariant.Dark,
+            _ => ThemeVariant.Default,
+        };
         
+        chuanKou.SelectedValue = App.AppConfig.ComPort;
         
+        chuanRate.SelectedItem = chuanRate.Items
+            .OfType<ComboBoxItem>()
+            .FirstOrDefault(i => i.Content?.ToString() == App.AppConfig.BaudRate);
+        
+        jiaoYan.SelectedItem = jiaoYan.Items
+            .OfType<ComboBoxItem>()
+            .FirstOrDefault(i => i.Content?.ToString() == App.AppConfig.Parity);
+        
+        shuJuWei.SelectedItem = shuJuWei.Items
+            .OfType<ComboBoxItem>()
+            .FirstOrDefault(i => i.Content?.ToString() == App.AppConfig.DataBits.ToString());
+        
+        tingZhiWei.SelectedItem = tingZhiWei.Items
+            .OfType<ComboBoxItem>()
+            .FirstOrDefault(i => i.Content?.ToString() == App.AppConfig.StopBits);
+
+
+
+
         // _appConfig = HelpJson.Read(_luAppConfig, AppJsonContext.Default.AppConfig);
         // if (_appConfig == null)
         // {
@@ -60,16 +94,23 @@ public partial class MainWindow : UrsaWindow
     {
         if (sender is ToggleButton toggleButton)
         {
-            if (toggleButton.IsChecked == true)
+            if (_startupOk)
             {
-                Application.Current.RequestedThemeVariant = ThemeVariant.Light;
-            }else 
-            {
-                Application.Current.RequestedThemeVariant = ThemeVariant.Dark;
+                if (toggleButton.IsChecked == true)
+                {
+                    Application.Current?.RequestedThemeVariant = ThemeVariant.Light;
+                }else 
+                {
+                    Application.Current?.RequestedThemeVariant = ThemeVariant.Dark;
+                }
+
+                App.AppConfig.ThemeVariant = Application.Current?.RequestedThemeVariant?.ToString() ?? "Default";
+                SaveConfig();
             }
         }
     }
 
+    
     private void TextBox_OnTextChanged(object? sender, TextChangedEventArgs e)
     {
         if (sender is not TextBox tb) return;
@@ -81,7 +122,10 @@ public partial class MainWindow : UrsaWindow
 
     private void SaveConfig()
     {
-        HelpJson.Write(App.AppConfig, App.LuJingAppConfig, AppJsonContext.Default.AppConfig);
+        if (_startupOk)
+        {
+            HelpJson.Write(App.AppConfig, App.LuJingAppConfig, AppJsonContext.Default.AppConfig);
+        }
     }
 
     
@@ -99,6 +143,13 @@ public partial class MainWindow : UrsaWindow
             {
                 return;
             }
+
+            App.AppConfig.ComPort = name;
+            App.AppConfig.BaudRate = baudRate.ToString();
+            App.AppConfig.Parity = parity.ToString();
+            App.AppConfig.DataBits = shuJU;
+            App.AppConfig.StopBits =  stopBits.ToString();
+            SaveConfig();
             
             _comIsRun = true;
             _thread1 = new Thread(BackReadCom);
@@ -131,6 +182,16 @@ public partial class MainWindow : UrsaWindow
                 var bbb = _port.TakeAllBytes();
                 if (bbb.Length > 0)
                 {
+                    long temp = (long)_model.DisplayCounter + bbb.Length;
+                    if (temp > int.MaxValue)
+                    {
+                        _model.DisplayCounter = 0;
+                    }
+                    else
+                    {
+                        _model.DisplayCounter = (int)temp;
+                    }
+                    
                     if (_displayText)
                     {
                         if (_displayTime)
@@ -157,13 +218,9 @@ public partial class MainWindow : UrsaWindow
                             string aa =  BitConverter.ToString(bbb).Replace("-", " ");
                             _model.DisplayText += "=> " + aa + Environment.NewLine;
                         }
-                        
                     }
                 }
             }
-            
-            
-            
             Thread.Sleep(20);
         }
     }
@@ -212,6 +269,16 @@ public partial class MainWindow : UrsaWindow
         {
             byte[] bb = System.Text.Encoding.UTF8.GetBytes(_model.SendText);
             _port.Send(bb);
+            
+            long temp = (long)_model.SendCounter + bb.Length;
+            if (temp > int.MaxValue)
+            {
+                _model.SendCounter = 0;
+            }
+            else
+            {
+                _model.SendCounter = (int)temp;
+            }
         }
         else
         {
@@ -225,6 +292,16 @@ public partial class MainWindow : UrsaWindow
             string hex = _model.SendText.Replace(" ", "");
             byte[] bytes = Convert.FromHexString(hex);
             _port.Send(bytes);
+            
+            long temp = (long)_model.SendCounter + bytes.Length;
+            if (temp > int.MaxValue)
+            {
+                _model.SendCounter = 0;
+            }
+            else
+            {
+                _model.SendCounter = (int)temp;
+            }
         }
     }
 
@@ -295,5 +372,33 @@ public partial class MainWindow : UrsaWindow
         return (c >= '0' && c <= '9') ||
                (c >= 'a' && c <= 'f') ||
                (c >= 'A' && c <= 'F');
+    }
+
+
+    private void Button_OnClick3(object? sender, RoutedEventArgs e)
+    {
+        _model.DisplayText = string.Empty;
+        _model.DisplayCounter = 0;
+    }
+
+    private void Button_OnClick4(object? sender, RoutedEventArgs e)
+    {
+        _model.SendText  = string.Empty;
+        _model.SendCounter = 0;
+    }
+
+    private void ZhuTabControl_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (sender is TabControl tabControl)
+        {
+            if (_startupOk)
+            {
+                if (tabControl.SelectedIndex != App.AppConfig.TabItemIndex)
+                {
+                    App.AppConfig.TabItemIndex =  tabControl.SelectedIndex;
+                    SaveConfig();
+                }
+            }
+        }
     }
 }

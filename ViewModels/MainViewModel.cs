@@ -15,4 +15,9 @@ public partial class MainViewModel : ObservableObject
     
     [ObservableProperty]
     private string _sendText = string.Empty;
+    
+    [ObservableProperty]
+    private int _sendCounter = 0;
+    [ObservableProperty]
+    private int _displayCounter = 0;
 }

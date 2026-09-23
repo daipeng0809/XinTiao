@@ -15,7 +15,22 @@ public class HelpJson
         /// <typeparam name="T">对象类型</typeparam>
         /// <param name="obj">待序列化对象</param>
         /// <returns>标准JSON字符串</returns>
-        public static async Task Write<T>(T obj, string luJing, JsonTypeInfo<T> jsonTypeInfo)
+        public static void Write<T>(T obj, string luJing, JsonTypeInfo<T> jsonTypeInfo)
+        {
+            if (obj == null && luJing.Length < 1)
+                return;
+            string json = JsonSerializer.Serialize(obj, jsonTypeInfo);
+
+            System.IO.File.WriteAllText(luJing, json);
+        }
+        
+        /// <summary>
+        /// 序列化：对象 → JSON字符串（中文正常显示不转义）
+        /// </summary>
+        /// <typeparam name="T">对象类型</typeparam>
+        /// <param name="obj">待序列化对象</param>
+        /// <returns>标准JSON字符串</returns>
+        public static async Task WriteAsync<T>(T obj, string luJing, JsonTypeInfo<T> jsonTypeInfo)
         {
             if (obj == null && luJing.Length < 1)
                 return;
