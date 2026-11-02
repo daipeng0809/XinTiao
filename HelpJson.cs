@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -10,18 +10,32 @@ namespace XinTiao;
 public class HelpJson
     {
         /// <summary>
-        /// 序列化：对象 → JSON字符串（中文正常显示不转义）
+        /// 序列化：对象 → JSON文件（中文正常显示不转义）
+        /// [修改] 自动创建目录、异常不向外抛，返回是否写入成功（跨平台下目录只读时可交由调用方回退）
         /// </summary>
         /// <typeparam name="T">对象类型</typeparam>
-        /// <param name="obj">待序列化对象</param>
-        /// <returns>标准JSON字符串</returns>
-        public static void Write<T>(T obj, string luJing, JsonTypeInfo<T> jsonTypeInfo)
+        /// <param name="luJing">文件路径</param>
+        /// <returns>是否写入成功</returns>
+        public static bool Write<T>(T obj, string luJing, JsonTypeInfo<T> jsonTypeInfo)
         {
-            if (obj == null && luJing.Length < 1)
-                return;
-            string json = JsonSerializer.Serialize(obj, jsonTypeInfo);
+            if (obj == null || string.IsNullOrWhiteSpace(luJing))
+                return false;
 
-            System.IO.File.WriteAllText(luJing, json);
+            try
+            {
+                string? dir = System.IO.Path.GetDirectoryName(luJing);
+                if (!string.IsNullOrEmpty(dir))
+                    System.IO.Directory.CreateDirectory(dir);
+
+                string json = JsonSerializer.Serialize(obj, jsonTypeInfo);
+                System.IO.File.WriteAllText(luJing, json);
+                return true;
+            }
+            catch
+            {
+                // 目录只读 / 文件被占用等情况不弹异常，避免影响主流程
+                return false;
+            }
         }
         
         /// <summary>
@@ -32,11 +46,22 @@ public class HelpJson
         /// <returns>标准JSON字符串</returns>
         public static async Task WriteAsync<T>(T obj, string luJing, JsonTypeInfo<T> jsonTypeInfo)
         {
-            if (obj == null && luJing.Length < 1)
+            if (obj == null || string.IsNullOrWhiteSpace(luJing))
                 return;
-            string json = JsonSerializer.Serialize(obj, jsonTypeInfo);
 
-            await System.IO.File.WriteAllTextAsync(luJing, json);
+            try
+            {
+                string? dir = System.IO.Path.GetDirectoryName(luJing);
+                if (!string.IsNullOrEmpty(dir))
+                    System.IO.Directory.CreateDirectory(dir);
+
+                string json = JsonSerializer.Serialize(obj, jsonTypeInfo);
+                await System.IO.File.WriteAllTextAsync(luJing, json);
+            }
+            catch
+            {
+                // 同 Write：失败不抛异常
+            }
         }
 
         /// <summary>
