@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <TargetFramework>net10.0</TargetFramework>
@@ -9,6 +9,16 @@
         <Product>信息调试助手</Product>
         <AssemblyVersion>1.0.0</AssemblyVersion>
         <FileVersion>1.0.0</FileVersion>
+
+        <!-- ===== [新增] AOT / 跨平台发布相关配置 ===== -->
+        <!-- 绑定必须在编译期生成，NativeAOT 下反射绑定不可用 -->
+        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <!-- 开启 AOT/裁剪分析器，及时发现不兼容用法 -->
+        <IsAotCompatible>true</IsAotCompatible>
+        <!-- 中文排序/比较需要 ICU，不能启用 InvariantGlobalization -->
+        <InvariantGlobalization>false</InvariantGlobalization>
+        <!-- 支持的发布目标：Windows x64/arm64、银河麒麟等 Linux x64/arm64 -->
+        <RuntimeIdentifiers>win-x64;win-arm64;linux-x64;linux-arm64</RuntimeIdentifiers>
     </PropertyGroup>
 
     <ItemGroup>
@@ -16,27 +26,39 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="12.1.2" />
-        <PackageReference Include="Avalonia.Desktop" Version="12.1.2" />
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.2" />
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.2" />
+        <PackageReference Include="Avalonia" Version="12.1.5" />
+        <PackageReference Include="Avalonia.Desktop" Version="12.1.5" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.5" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.5" />
         <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">
             <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
             <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
         </PackageReference>
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2"/>
-        <PackageReference Include="Irihi.Ursa" Version="2.2.0" />
-        <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="2.2.0" />
+        <PackageReference Include="Irihi.Ursa" Version="2.3.0" />
+        <PackageReference Include="Irihi.Ursa.Themes.Semi" Version="2.3.0" />
         <PackageReference Include="Semi.Avalonia" Version="12.1.0.1" />
-        <PackageReference Include="System.IO.Ports" Version="10.0.11" />
+        <PackageReference Include="System.IO.Ports" Version="10.0.14" />
     </ItemGroup>
 
     <ItemGroup>
       <None Update="Config\配置文件.txt">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </None>
       <None Update="Config\AppConfig.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </None>
     </ItemGroup>
+
+    <!-- ===== [新增] 仅在 AOT 发布时生效的优化选项 ===== -->
+    <!-- Windows 做 NativeAOT 需先安装 VS 2022「使用 C++ 的桌面开发」（含 MSVC v143 x64 生成工具）；
+         Linux 做 NativeAOT 需 clang/LLD（银河麒麟：sudo apt install clang lld zlib1g-dev），
+         且不支持交叉编译，需在目标机/同架构机器上发布；
+         命令示例：dotnet publish -c Release -r linux-arm64 -p:PublishAot=true -->
+    <PropertyGroup Condition="'$(PublishAot)' == 'true'">
+      <IlcOptimizationPreference>Size</IlcOptimizationPreference>
+      <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
+    </PropertyGroup>
 </Project>

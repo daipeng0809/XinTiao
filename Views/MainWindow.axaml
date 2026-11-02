@@ -4,153 +4,320 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:u="https://irihi.tech/ursa"
-        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600" Width="900" Height="600"
+        mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="680"
+        Width="1000" Height="680" MinWidth="900" MinHeight="600"
         x:Class="XinTiao.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Icon="/Assets/avalonia-logo.ico" WindowStartupLocation="CenterOwner"
+        Icon="/Assets/avalonia-logo.ico"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="{DynamicResource AppFontFamily}"
         Loaded="Control_OnLoaded"
-        Title="XinTiao">
+        Title="信息调试助手">
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainViewModel />
     </Design.DataContext>
-    <Border BorderBrush="Black" BorderThickness="1">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="30" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="30" />
-            </Grid.RowDefinitions>
-            <Grid Grid.Row="0">
-                <!--这里写标题栏内容-->
-                
+
+    <!-- ===== [新增] 统一视觉样式：分组标题、字段标签、按钮尺寸 ===== -->
+    <u:UrsaWindow.Styles>
+        <Style Selector="TextBlock.groupTitle">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Opacity" Value="0.65" />
+        </Style>
+        <Style Selector="TextBlock.fieldLabel">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Opacity" Value="0.85" />
+        </Style>
+        <Style Selector="Button.act">
+            <Setter Property="MinWidth" Value="98" />
+            <Setter Property="MinHeight" Value="32" />
+        </Style>
+    </u:UrsaWindow.Styles>
+
+    <!-- ===== [新增] 首行 32px 为 UrsaWindow 自绘标题栏留白，避免内容被标题栏按钮遮挡 ===== -->
+    <Grid RowDefinitions="32,Auto,*,Auto">
+
+        <!-- ===================== 顶部：功能说明 + 连接状态 ===================== -->
+        <Border Grid.Row="1" Padding="14,8" BorderThickness="0,0,0,1" BorderBrush="#22808080">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Border Width="4" Height="18" CornerRadius="2" Background="#2E7BE6" />
+                    <TextBlock Text="串口 / TCP / UDP 调试工具" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Ellipse Name="ZhuangTaiDian" Width="8" Height="8" Fill="#9AA4B2" VerticalAlignment="Center" />
+                    <TextBlock Name="ZhuangTaiWenBen" Text="未连接" FontSize="12" VerticalAlignment="Center" />
+                </StackPanel>
             </Grid>
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition MaxWidth="300" Width="300" />
-                    <ColumnDefinition Width="2" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <Border BorderBrush="#D6E2EF" Theme="{StaticResource CardBorder}" Margin="10 0 2 0" Grid.Column="0" >
-                    <!--这里写设置内容-->
-                    <TabControl Name="ZhuTabControl" SelectionChanged="ZhuTabControl_OnSelectionChanged">
-                        <TabItem Name="Tou_Com" Header="串口">
-                            <StackPanel Margin="0 10 0 0" Spacing="10">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock VerticalAlignment="Center" Text="请选择串口："></TextBlock>
-                                        <ComboBox BorderBrush="#D6E2EF" Name="chuanKou" ItemsSource="{Binding ComName}" Width="154" Height="30" SelectedIndex="0" MaxDropDownHeight="200" />
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock VerticalAlignment="Center" Text="请选择波特率："></TextBlock>
-                                        <ComboBox BorderBrush="#D6E2EF" Name="chuanRate" Width="140" Height="30" SelectedIndex="4" MaxDropDownHeight="200" >
-                                            <ComboBoxItem>600</ComboBoxItem>
-                                            <ComboBoxItem>1200</ComboBoxItem>
-                                            <ComboBoxItem>2400</ComboBoxItem>
-                                            <ComboBoxItem>4800</ComboBoxItem>
-                                            <ComboBoxItem>9600</ComboBoxItem>
-                                            <ComboBoxItem>19200</ComboBoxItem>
-                                            <ComboBoxItem>38400</ComboBoxItem>
-                                            <ComboBoxItem>57600</ComboBoxItem>
-                                            <ComboBoxItem>115200</ComboBoxItem>
-                                            <ComboBoxItem>230400</ComboBoxItem>
-                                            <ComboBoxItem>460800</ComboBoxItem>
-                                            <ComboBoxItem>576000</ComboBoxItem>
-                                        </ComboBox>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock VerticalAlignment="Center" Text="请选择校验："></TextBlock>
-                                        <ComboBox BorderBrush="#D6E2EF" Name="jiaoYan" Width="154" Height="30" SelectedIndex="0" MaxDropDownHeight="200" >
-                                            <ComboBoxItem>None</ComboBoxItem>
-                                            <ComboBoxItem>Odd</ComboBoxItem>
-                                            <ComboBoxItem>Even</ComboBoxItem>
-                                            <ComboBoxItem>Mark</ComboBoxItem>
-                                            <ComboBoxItem>Space</ComboBoxItem>
-                                        </ComboBox>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock VerticalAlignment="Center" Text="请选数据位："></TextBlock>
-                                        <ComboBox BorderBrush="#D6E2EF" Name="shuJuWei" Width="154" Height="30" SelectedIndex="0" MaxDropDownHeight="200" >
-                                            <ComboBoxItem>8</ComboBoxItem>
-                                            <ComboBoxItem>7</ComboBoxItem>
-                                            <ComboBoxItem>6</ComboBoxItem>
-                                            <ComboBoxItem>5</ComboBoxItem>
-                                        </ComboBox>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock VerticalAlignment="Center" Text="请选停止位："></TextBlock>
-                                        <ComboBox BorderBrush="#D6E2EF" Name="tingZhiWei" Width="154" Height="30" SelectedIndex="0" MaxDropDownHeight="200" >
-                                            <ComboBoxItem>One</ComboBoxItem>
-                                            <ComboBoxItem>Two</ComboBoxItem>
-                                            <ComboBoxItem>OnePointFive</ComboBoxItem>
-                                            <ComboBoxItem>None</ComboBoxItem>
-                                        </ComboBox>
-                                    </StackPanel>
-                                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Spacing="20">
-                                        <Button Name="kaiShi" Content="打开串口" Classes="Success" Theme="{StaticResource SolidButton}" Width="100" Height="35" Click="Button_OnClick"/>
-                                        <Button Name="guanBi" IsEnabled="False" Content="关闭串口" Classes="Warning" Theme="{StaticResource SolidButton}" Width="100" Height="35" Click="Button_OnClick1"/>
-                                    </StackPanel>
+        </Border>
+
+        <!-- ===================== 主体 ===================== -->
+        <Grid Grid.Row="2" Margin="10,10,10,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="336" MinWidth="300" MaxWidth="470" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ===== 左侧：连接设置 ===== -->
+            <Border Grid.Column="0" Theme="{StaticResource CardBorder}" Padding="10">
+                <TabControl Name="ZhuTabControl" SelectionChanged="ZhuTabControl_OnSelectionChanged">
+
+                    <!-- ===== 串口页 ===== -->
+                    <TabItem Name="Tou_Com" Header="串口">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="groupTitle" Text="串口参数" />
+
+                                <Grid ColumnDefinitions="84,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Classes="fieldLabel" Text="串口" />
+                                    <ComboBox Grid.Row="0" Grid.Column="1" Name="chuanKou" ItemsSource="{Binding ComName}"
+                                              Height="30" SelectedIndex="0" MaxDropDownHeight="200" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Classes="fieldLabel" Margin="0,8,0,0" Text="波特率" />
+                                    <ComboBox Grid.Row="1" Grid.Column="1" Name="chuanRate" Margin="0,8,0,0"
+                                              Height="30" SelectedIndex="4" MaxDropDownHeight="200">
+                                        <ComboBoxItem>600</ComboBoxItem>
+                                        <ComboBoxItem>1200</ComboBoxItem>
+                                        <ComboBoxItem>2400</ComboBoxItem>
+                                        <ComboBoxItem>4800</ComboBoxItem>
+                                        <ComboBoxItem>9600</ComboBoxItem>
+                                        <ComboBoxItem>19200</ComboBoxItem>
+                                        <ComboBoxItem>38400</ComboBoxItem>
+                                        <ComboBoxItem>57600</ComboBoxItem>
+                                        <ComboBoxItem>115200</ComboBoxItem>
+                                        <ComboBoxItem>230400</ComboBoxItem>
+                                        <ComboBoxItem>460800</ComboBoxItem>
+                                        <ComboBoxItem>576000</ComboBoxItem>
+                                    </ComboBox>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Classes="fieldLabel" Margin="0,8,0,0" Text="校验位" />
+                                    <ComboBox Grid.Row="2" Grid.Column="1" Name="jiaoYan" Margin="0,8,0,0"
+                                              Height="30" SelectedIndex="0" MaxDropDownHeight="200">
+                                        <ComboBoxItem>None</ComboBoxItem>
+                                        <ComboBoxItem>Odd</ComboBoxItem>
+                                        <ComboBoxItem>Even</ComboBoxItem>
+                                        <ComboBoxItem>Mark</ComboBoxItem>
+                                        <ComboBoxItem>Space</ComboBoxItem>
+                                    </ComboBox>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Classes="fieldLabel" Margin="0,8,0,0" Text="数据位" />
+                                    <ComboBox Grid.Row="3" Grid.Column="1" Name="shuJuWei" Margin="0,8,0,0"
+                                              Height="30" SelectedIndex="0" MaxDropDownHeight="200">
+                                        <ComboBoxItem>8</ComboBoxItem>
+                                        <ComboBoxItem>7</ComboBoxItem>
+                                        <ComboBoxItem>6</ComboBoxItem>
+                                        <ComboBoxItem>5</ComboBoxItem>
+                                    </ComboBox>
+
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Classes="fieldLabel" Margin="0,8,0,0" Text="停止位" />
+                                    <ComboBox Grid.Row="4" Grid.Column="1" Name="tingZhiWei" Margin="0,8,0,0"
+                                              Height="30" SelectedIndex="0" MaxDropDownHeight="200">
+                                        <ComboBoxItem>One</ComboBoxItem>
+                                        <ComboBoxItem>Two</ComboBoxItem>
+                                        <ComboBoxItem>OnePointFive</ComboBoxItem>
+                                        <ComboBoxItem>None</ComboBoxItem>
+                                    </ComboBox>
+                                </Grid>
+
+                                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" Margin="0,10,0,0">
+                                    <Button Name="kaiShi" Content="打开串口" Classes="Success act"
+                                            Theme="{StaticResource SolidButton}" Click="Button_OnClick" />
+                                    <Button Name="guanBi" IsEnabled="False" Content="关闭串口" Classes="Warning act"
+                                            Theme="{StaticResource SolidButton}" Click="Button_OnClick1" />
                                 </StackPanel>
-                        </TabItem>
-                        <TabItem Name="Tou_Tcp" Header="TCP">
-                            <Grid>
-                                <TextBlock>待开发</TextBlock>
-                            </Grid>
-                        </TabItem>
-                        <TabItem Name="Tou_Udp" Header="UDP">
-                            <Grid>
-                                <TextBlock>待开发</TextBlock>
-                            </Grid>
-                        </TabItem>
-                    </TabControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- ===== TCP 页：新增 工作模式（客户端 / 服务端） ===== -->
+                    <TabItem Name="Tou_Tcp" Header="TCP">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
+                            <StackPanel Spacing="8">
+                                <Grid ColumnDefinitions="84,*">
+                                    <TextBlock Grid.Column="0" Classes="fieldLabel" Text="工作模式" />
+                                    <ComboBox Grid.Column="1" Name="Tcp_MoShi" Height="30" SelectedIndex="0"
+                                              SelectionChanged="Tcp_MoShi_OnSelectionChanged">
+                                        <ComboBoxItem>客户端（主动连接）</ComboBoxItem>
+                                        <ComboBoxItem>服务端（监听等待）</ComboBoxItem>
+                                    </ComboBox>
+                                </Grid>
+
+                                <TextBlock Classes="groupTitle" Margin="0,6,0,0" Text="本地参数" />
+                                <Grid ColumnDefinitions="84,*" RowDefinitions="Auto,Auto">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Classes="fieldLabel" Text="本地IP" />
+                                    <TextBox Grid.Row="0" Grid.Column="1" Name="Tcp_BenDiIp" Height="30"
+                                             VerticalContentAlignment="Center" PlaceholderText="0.0.0.0 表示所有网卡" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Classes="fieldLabel" Margin="0,8,0,0" Text="本地端口" />
+                                    <NumericUpDown Grid.Row="1" Grid.Column="1" Name="Tcp_BenDiDuanKou" Margin="0,8,0,0"
+                                                   Height="30" Minimum="0" Maximum="65535" Increment="1"
+                                                   FormatString="0" Value="0" />
+                                </Grid>
+
+                                <TextBlock Classes="groupTitle" Margin="0,6,0,0" Text="对端参数" />
+                                <Grid ColumnDefinitions="84,*" RowDefinitions="Auto,Auto">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Classes="fieldLabel" Text="对端IP" />
+                                    <TextBox Grid.Row="0" Grid.Column="1" Name="Tcp_DuiDuanIp" Height="30"
+                                             VerticalContentAlignment="Center" PlaceholderText="例如 192.168.1.20" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Classes="fieldLabel" Margin="0,8,0,0" Text="对端端口" />
+                                    <NumericUpDown Grid.Row="1" Grid.Column="1" Name="Tcp_DuiDuanDuanKou" Margin="0,8,0,0"
+                                                   Height="30" Minimum="1" Maximum="65535" Increment="1"
+                                                   FormatString="0" Value="8080" />
+                                </Grid>
+
+                                <TextBlock Name="Tcp_KeHuDuanXinXi" FontSize="12" Opacity="0.6"
+                                           TextWrapping="Wrap" Text="客户端模式：填写对端 IP / 端口后点击“连接”。" />
+
+                                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" Margin="0,10,0,0">
+                                    <Button Name="Tcp_LianJie" Content="连  接" Classes="Success act"
+                                            Theme="{StaticResource SolidButton}" Click="Button_TcpLianJie_OnClick" />
+                                    <Button Name="Tcp_DuanKai" IsEnabled="False" Content="断  开" Classes="Warning act"
+                                            Theme="{StaticResource SolidButton}" Click="Button_TcpDuanKai_OnClick" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- ===== UDP 页 ===== -->
+                    <TabItem Name="Tou_Udp" Header="UDP">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="groupTitle" Text="本地参数" />
+                                <Grid ColumnDefinitions="84,*" RowDefinitions="Auto,Auto">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Classes="fieldLabel" Text="本地IP" />
+                                    <TextBox Grid.Row="0" Grid.Column="1" Name="Udp_BenDiIp" Height="30"
+                                             VerticalContentAlignment="Center" PlaceholderText="0.0.0.0 表示所有网卡" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Classes="fieldLabel" Margin="0,8,0,0" Text="本地端口" />
+                                    <NumericUpDown Grid.Row="1" Grid.Column="1" Name="Udp_BenDiDuanKou" Margin="0,8,0,0"
+                                                   Height="30" Minimum="0" Maximum="65535" Increment="1"
+                                                   FormatString="0" Value="8080" />
+                                </Grid>
+
+                                <TextBlock Classes="groupTitle" Margin="0,6,0,0" Text="对端参数" />
+                                <Grid ColumnDefinitions="84,*" RowDefinitions="Auto,Auto">
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Classes="fieldLabel" Text="对端IP" />
+                                    <TextBox Grid.Row="0" Grid.Column="1" Name="Udp_DuiDuanIp" Height="30"
+                                             VerticalContentAlignment="Center" PlaceholderText="例如 192.168.1.20" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Classes="fieldLabel" Margin="0,8,0,0" Text="对端端口" />
+                                    <NumericUpDown Grid.Row="1" Grid.Column="1" Name="Udp_DuiDuanDuanKou" Margin="0,8,0,0"
+                                                   Height="30" Minimum="1" Maximum="65535" Increment="1"
+                                                   FormatString="0" Value="8081" />
+                                </Grid>
+
+                                <TextBlock FontSize="12" Opacity="0.6" TextWrapping="Wrap"
+                                           Text="打开后仍可修改对端 IP / 端口，修改立即生效。" />
+
+                                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" Margin="0,10,0,0">
+                                    <Button Name="Udp_DaKai" Content="打  开" Classes="Success act"
+                                            Theme="{StaticResource SolidButton}" Click="Button_UdpDaKai_OnClick" />
+                                    <Button Name="Udp_GuanBi" IsEnabled="False" Content="关  闭" Classes="Warning act"
+                                            Theme="{StaticResource SolidButton}" Click="Button_UdpGuanBi_OnClick" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
+            </Border>
+
+            <GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Transparent" />
+
+            <!-- ===== 右侧：接收区 + 发送区 ===== -->
+            <Grid Grid.Column="2" RowDefinitions="*,6,224" Margin="4,0,0,0">
+
+                <!-- 接收区 -->
+                <Border Grid.Row="0" Theme="{StaticResource CardBorder}" Padding="10">
+                    <Grid RowDefinitions="Auto,*">
+                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,6">
+                            <TextBlock Text="接收区" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14">
+                                <ToggleSwitch Name="XianShiShiJian" IsCheckedChanged="ToggleButton_OnIsCheckedChanged2"
+                                              OnContent="显示时间" OffContent="不显示时间" IsChecked="True" />
+                                <ToggleSwitch Name="XianShiWenBen" IsCheckedChanged="ToggleButton_OnIsCheckedChanged1"
+                                              OnContent="文本显示" OffContent="HEX显示" IsChecked="True" />
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBox Grid.Row="1" Name="JieShouKuang" Text="{Binding DisplayText}"
+                                 TextChanged="TextBox_OnTextChanged"
+                                 IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                 Theme="{StaticResource LooklessTextBox}" Background="Transparent"
+                                 BorderThickness="0" Padding="4"
+                                 VerticalAlignment="Stretch" Height="NaN"
+                                 VerticalContentAlignment="Top"
+                                 PlaceholderText="接收的内容..." />
+                    </Grid>
                 </Border>
-                <GridSplitter Grid.Column="1" ResizeDirection="Columns"/>
-                <Grid Grid.Column="2" >
-                    <Grid.RowDefinitions>
-                        <RowDefinition MinHeight="110" Height="5*"></RowDefinition>
-                        <RowDefinition Height="2"></RowDefinition>
-                        <RowDefinition MinHeight="170" Height="170"></RowDefinition>
-                    </Grid.RowDefinitions>
-                    <Border BorderBrush="#D6E2EF" Theme="{StaticResource CardBorder}" Margin="2 0 10 2" Grid.Row="0" >
-                        <!--数据显示区-->
-                        <Grid>
-                            <TextBox PlaceholderText="接收的内容..." Text="{Binding DisplayText}" VerticalContentAlignment="Bottom" IsReadOnly="True" Background="Transparent" Margin="-10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Theme="{StaticResource LooklessTextBox}" />
-                            <ToggleSwitch IsCheckedChanged="ToggleButton_OnIsCheckedChanged1" OnContent="文本显示" OffContent="HEX显示" IsChecked="True" Margin="0 -10 -15 0" VerticalAlignment="Top" HorizontalAlignment="Right" />
-                            <ToggleSwitch IsCheckedChanged="ToggleButton_OnIsCheckedChanged2" OnContent="显示时间" OffContent="不显示时间" IsChecked="True" Margin="0 -10 100 0" VerticalAlignment="Top" HorizontalAlignment="Right" />
 
-                        </Grid>
-                    </Border>
-                    <GridSplitter Grid.Row="1" ResizeDirection="Rows"/>
-                    <Border BorderBrush="#D6E2EF" Theme="{StaticResource CardBorder}" Margin="2 2 10 0" Grid.Row="2" >
-                        <!--数据输入区-->
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="110" />
-                            </Grid.ColumnDefinitions>
-                            <TextBox Grid.Column="0" PlaceholderText="请输入内容..." Text="{Binding SendText}" Background="Transparent" Margin="-10 -10 0 -10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Classes="TextArea"  />
-                            <Grid Grid.Column="1">
-                                <ToggleSwitch  OnContent="文本发送" IsCheckedChanged="ToggleButton_OnIsCheckedChanged3" OffContent="HEX发送" IsChecked="True" Margin="0 -10 -15 0" VerticalAlignment="Top" HorizontalAlignment="Right" />
-                                <Button Content="发    送" Click="Button_OnClick2" Margin="0 20 -5 0" Classes="Success" Width="100" Theme="{StaticResource SolidButton}" VerticalAlignment="Top" HorizontalAlignment="Right"/>
-                                <Button Content="定时发送" Margin="0 60 -5 0" Classes="Success" Width="100" Theme="{StaticResource SolidButton}" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+                <GridSplitter Grid.Row="1" ResizeDirection="Rows" Background="Transparent" />
 
-                            </Grid>
+                <!-- 发送区 -->
+                <Border Grid.Row="2" Theme="{StaticResource CardBorder}" Padding="10">
+                    <Grid RowDefinitions="Auto,*,Auto">
+                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,6">
+                            <TextBlock Text="发送区" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <ToggleSwitch Grid.Column="2" Name="WenBenFaSong" IsCheckedChanged="ToggleButton_OnIsCheckedChanged3"
+                                          OnContent="文本发送" OffContent="HEX发送" IsChecked="True" />
                         </Grid>
 
-                    </Border>
-                </Grid>
-            </Grid>
-            <Grid Grid.Row="2" >
-                <!--这里写底边栏内容-->
-                <Button Content="清空接收" Click="Button_OnClick3" Width="90" Height="20" Classes="Small" Theme="{StaticResource OutlineButton}" Margin="0 0 500 0" VerticalAlignment="Center" HorizontalAlignment="Right" />
-                <Button Content="清空发送" Click="Button_OnClick4" Width="90" Height="20" Classes="Small" Theme="{StaticResource OutlineButton}" Margin="0 0 400 0" VerticalAlignment="Center" HorizontalAlignment="Right" />
-                <TextBlock Text="发送：" Margin="0 0 350 0" VerticalAlignment="Center" HorizontalAlignment="Right" />
-                <TextBlock Text="{Binding SendCounter}" Margin="-350 2 0 0" VerticalAlignment="Center" HorizontalAlignment="Right" />
-                <TextBlock Text="接收：" Margin="0 0 200 0" VerticalAlignment="Center" HorizontalAlignment="Right" />
-                <TextBlock Text="{Binding DisplayCounter}" Margin="-200 2 0 0" VerticalAlignment="Center" HorizontalAlignment="Right" />
-                <ToggleSwitch Name="ZhuTi" IsCheckedChanged="ToggleButton_OnIsCheckedChanged" OnContent="亮色" OffContent="暗色" IsChecked="True" Margin="0 0 10 0" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                        <TextBox Grid.Row="1" Text="{Binding SendText}" AcceptsReturn="True" TextWrapping="Wrap"
+                                 VerticalAlignment="Stretch" Height="NaN"
+                                 VerticalContentAlignment="Top" Margin="0,0,0,8"
+                                 PlaceholderText="请输入要发送的内容..." />
+
+                        <Grid Grid.Row="2">
+                            <StackPanel Orientation="Horizontal" Spacing="12"
+                                        HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <TextBlock Text="间隔" FontSize="12" VerticalAlignment="Center" Opacity="0.7" />
+                                    <NumericUpDown Name="DingShiJianGe" Width="96" Height="30"
+                                                   Minimum="10" Maximum="3600000" Increment="100"
+                                                   FormatString="0" Value="1000" />
+                                    <TextBlock Text="ms" FontSize="12" VerticalAlignment="Center" Opacity="0.7" />
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <Button Name="DingShi" Content="定时发送" Classes="act"
+                                            Theme="{StaticResource OutlineButton}" Click="Button_OnClick5" />
+                                    <Button Content="发    送" Classes="Success act"
+                                            Theme="{StaticResource SolidButton}" Click="Button_OnClick2" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
             </Grid>
         </Grid>
-    </Border>
+
+        <!-- ===================== 底部状态栏 ===================== -->
+        <Border Grid.Row="3" Padding="14,6" BorderThickness="0,1,0,0" BorderBrush="#22808080">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="发送" FontSize="12" Opacity="0.65" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding SendCounter}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="接收" FontSize="12" Opacity="0.65" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding DisplayCounter}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Button Content="清空接收" Click="Button_OnClick3" Height="26"
+                            Theme="{StaticResource OutlineButton}" />
+                    <Button Content="清空发送" Click="Button_OnClick4" Height="26"
+                            Theme="{StaticResource OutlineButton}" />
+                    <ToggleSwitch Name="ZhuTi" IsCheckedChanged="ToggleButton_OnIsCheckedChanged"
+                                  OnContent="亮色" OffContent="暗色" IsChecked="True" VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
 </u:UrsaWindow>

@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using System;
 using Avalonia.Media;
 
@@ -15,21 +15,24 @@ sealed class Program
 
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<App>()
+    {
+        AppBuilder builder = AppBuilder.Configure<App>()
             .UsePlatformDetect()
 #if DEBUG
             .WithDeveloperTools()
 #endif
-            .WithInterFont()
-            //为了应对银河麒麟v10桌面版默认字体问题问题
-            // .With(new FontManagerOptions
-            // {
-            //     DefaultFamilyName = "Noto Sans CJK SC",
-            //     FontFallbacks = new[]
-            //     {
-            //         new FontFallback { FontFamily = "Noto Sans CJK SC" },
-            //         new FontFallback { FontFamily = "WenQuanYi Micro Hei" },
-            //     },
-            // })
+            .WithInterFont();
+
+        // ===== [新增] 全局默认字体：Avalonia 初始化前探测系统中文字体，
+        // 让主题里使用 $Default 的控件也落到中文字体上（银河麒麟 V10 默认字体无中文字形） =====
+        string? defaultFamily = AppFont.ResolveDefaultFamilyName();
+        if (!string.IsNullOrEmpty(defaultFamily))
+            builder = builder.With(new FontManagerOptions { DefaultFamilyName = defaultFamily });
+
+        return builder
+            // ===== [新增] 字体初始化：按平台探测可用中文字体（解决银河麒麟 V10 默认字体问题） =====
+            // 在 AfterSetup 阶段执行，此时 FontManager 已就绪、主窗口尚未创建
+            .AfterSetup(_ => AppFont.Init())
             .LogToTrace();
+    }
 }
