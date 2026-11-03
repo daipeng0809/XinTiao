@@ -45,7 +45,7 @@
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <Border Width="4" Height="18" CornerRadius="2" Background="#2E7BE6" />
-                    <TextBlock Text="串口 / TCP / UDP 调试工具" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <TextBlock Text="信息调试助手" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
                 </StackPanel>
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <Ellipse Name="ZhuangTaiDian" Width="8" Height="8" Fill="#9AA4B2" VerticalAlignment="Center" />
@@ -74,11 +74,11 @@
 
                                 <Grid ColumnDefinitions="84,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
                                     <TextBlock Grid.Row="0" Grid.Column="0" Classes="fieldLabel" Text="串口" />
-                                    <ComboBox Grid.Row="0" Grid.Column="1" Name="chuanKou" ItemsSource="{Binding ComName}"
+                                    <ComboBox Grid.Row="0" Width="150" Grid.Column="1" Name="chuanKou" ItemsSource="{Binding ComName}"
                                               Height="30" SelectedIndex="0" MaxDropDownHeight="200" />
 
                                     <TextBlock Grid.Row="1" Grid.Column="0" Classes="fieldLabel" Margin="0,8,0,0" Text="波特率" />
-                                    <ComboBox Grid.Row="1" Grid.Column="1" Name="chuanRate" Margin="0,8,0,0"
+                                    <ComboBox Grid.Row="1" Width="150" Grid.Column="1" Name="chuanRate" Margin="0,8,0,0"
                                               Height="30" SelectedIndex="4" MaxDropDownHeight="200">
                                         <ComboBoxItem>600</ComboBoxItem>
                                         <ComboBoxItem>1200</ComboBoxItem>
@@ -95,7 +95,7 @@
                                     </ComboBox>
 
                                     <TextBlock Grid.Row="2" Grid.Column="0" Classes="fieldLabel" Margin="0,8,0,0" Text="校验位" />
-                                    <ComboBox Grid.Row="2" Grid.Column="1" Name="jiaoYan" Margin="0,8,0,0"
+                                    <ComboBox Grid.Row="2" Width="150" Grid.Column="1" Name="jiaoYan" Margin="0,8,0,0"
                                               Height="30" SelectedIndex="0" MaxDropDownHeight="200">
                                         <ComboBoxItem>None</ComboBoxItem>
                                         <ComboBoxItem>Odd</ComboBoxItem>
@@ -105,7 +105,7 @@
                                     </ComboBox>
 
                                     <TextBlock Grid.Row="3" Grid.Column="0" Classes="fieldLabel" Margin="0,8,0,0" Text="数据位" />
-                                    <ComboBox Grid.Row="3" Grid.Column="1" Name="shuJuWei" Margin="0,8,0,0"
+                                    <ComboBox Grid.Row="3" Width="150" Grid.Column="1" Name="shuJuWei" Margin="0,8,0,0"
                                               Height="30" SelectedIndex="0" MaxDropDownHeight="200">
                                         <ComboBoxItem>8</ComboBoxItem>
                                         <ComboBoxItem>7</ComboBoxItem>
@@ -114,7 +114,7 @@
                                     </ComboBox>
 
                                     <TextBlock Grid.Row="4" Grid.Column="0" Classes="fieldLabel" Margin="0,8,0,0" Text="停止位" />
-                                    <ComboBox Grid.Row="4" Grid.Column="1" Name="tingZhiWei" Margin="0,8,0,0"
+                                    <ComboBox Grid.Row="4" Width="150" Grid.Column="1" Name="tingZhiWei" Margin="0,8,0,0"
                                               Height="30" SelectedIndex="0" MaxDropDownHeight="200">
                                         <ComboBoxItem>One</ComboBoxItem>
                                         <ComboBoxItem>Two</ComboBoxItem>
