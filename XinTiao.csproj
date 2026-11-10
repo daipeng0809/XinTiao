@@ -5,7 +5,7 @@
         <Nullable>enable</Nullable>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AssemblyName>信息调试助手</AssemblyName>
-        <ApplicationIcon>hut4h-rveap-001.ico</ApplicationIcon>
+        <ApplicationIcon>wk-256x256.ico</ApplicationIcon>
         <Product>信息调试助手</Product>
         <AssemblyVersion>1.0.0</AssemblyVersion>
         <FileVersion>1.0.0</FileVersion>
