@@ -16,7 +16,9 @@ using Ursa.Controls;
 using XinTiao.Models;
 using XinTiao.ViewModels;
 using System.Linq;
+using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace XinTiao.Views;
 
@@ -46,9 +48,17 @@ public partial class MainWindow : UrsaWindow
     // ===== [新增] 定时发送定时器 =====
     private readonly DispatcherTimer _dingShiTimer = new();
 
+    // ===== [新增 V1.1.0] 多行发送：定时器、每行下一次发送时间、配置保存防抖 =====
+    private readonly DispatcherTimer _rowTimer = new() { Interval = TimeSpan.FromMilliseconds(20) };
+    private readonly Dictionary<SendRowViewModel, long> _rowNextTime = new();
+    private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromMilliseconds(500) };
+    private static readonly byte[] HuiCheHuanHang = [0x0D, 0x0A];//CR LF
+
     private bool _displayText = true;//显示文本
     private bool _displayTime = true;//显示时间
     private bool _sendText = true;//文本发送
+    private bool _appendNewLine;//发送时末尾追加回车换行
+    private bool _closing;//正在关闭连接（关闭动作已放后台线程执行）
 
     private bool _startupOk = false;//启动完成
     
@@ -66,6 +76,13 @@ public partial class MainWindow : UrsaWindow
         _tcpServer.ClientsChanged += TcpServerOnClientsChanged;
         _udp.ErrorOccurred += PortOnErrorOccurred;
         _dingShiTimer.Tick += DingShiTimer_OnTick;
+
+        // ===== [新增 V1.1.0] 多行发送：定时发送 Tick + 配置保存防抖 =====
+        _rowTimer.Tick += RowTimer_OnTick;
+        _saveTimer.Tick += SaveTimer_OnTick;
+
+        // ===== [新增 V1.1.0] 单条发送内容变化也走防抖保存 =====
+        _model.PropertyChanged += Model_OnPropertyChanged;
 
         // ===== [新增] 网络参数控件：修改后立即保存配置
         //（用 lambda 挂事件，避免 XAML 里对事件参数类型写死）
@@ -129,6 +146,20 @@ public partial class MainWindow : UrsaWindow
         XianShiShiJian.IsChecked = App.AppConfig.DisplayTime;
         WenBenFaSong.IsChecked = App.AppConfig.SendAsText;
         DingShiJianGe.Value = App.AppConfig.SendInterval;
+
+        // ===== [新增 V1.1.0] 载入 单条发送内容（重启后恢复） =====
+        // 配置文件里可能是 null（手工编辑等），统一归一成空串
+        _model.SendText = App.AppConfig.SendText ?? string.Empty;
+
+        // ===== [新增 V1.1.0] 载入 加回车换行 / 多行发送内容 / 发送页签 =====
+        JiaHuiCheHuanHang.IsChecked = App.AppConfig.AppendNewLine;
+        LoadSendRows();
+
+        // 发送区页签：直接在“发送区”标题边上，这里恢复上次所在页面
+        int faSongYe = App.AppConfig.SendTabIndex is >= 0 and <= 1 ? App.AppConfig.SendTabIndex : 0;
+        DuoHangYe.IsChecked = faSongYe == 1;
+        DanTiaoYe.IsChecked = faSongYe == 0;
+        ApplySendPage(faSongYe);
 
         // ===== [新增] 恢复上次所在的页面（0 串口 / 1 TCP / 2 UDP） =====
         ZhuTabControl.SelectedIndex = App.AppConfig.TabItemIndex is >= 0 and <= 2
@@ -206,6 +237,7 @@ public partial class MainWindow : UrsaWindow
     
     private void Button_OnClick(object? sender, RoutedEventArgs e)
     {
+        if (_closing) return;//上一个连接正在释放，避免抢同一个串口
         try
         {
             string name = chuanKou.Text ?? "";
@@ -214,7 +246,8 @@ public partial class MainWindow : UrsaWindow
             int shuJU = int.Parse(shuJuWei.Text);
             Enum.TryParse<StopBits>(tingZhiWei.Text, out StopBits stopBits);
 
-            if (!_port.Open(name, baudRate, parity, shuJU, stopBits, 500))
+            // 读超时改小：关闭串口时读取线程能更快退出，避免关串口卡顿
+            if (!_port.Open(name, baudRate, parity, shuJU, stopBits, 200))
             {
                 return;
             }
@@ -232,6 +265,7 @@ public partial class MainWindow : UrsaWindow
 
             SetSerialUiEnabled(false);
             LockOtherTabs(Tou_Com);
+            UpdateStatus();//串口打开成功后立即刷新右上角状态
         }
         catch (Exception exception)
         {
@@ -243,6 +277,8 @@ public partial class MainWindow : UrsaWindow
     // ===== [修改] TCP：连接（客户端）/ 开始监听（服务端） =====
     private void Button_TcpLianJie_OnClick(object? sender, RoutedEventArgs e)
     {
+        if (_closing) return;
+
         string benDiIp = (Tcp_BenDiIp.Text ?? string.Empty).Trim();
         int benDiDuanKou = (int)(Tcp_BenDiDuanKou.Value ?? 0);
 
@@ -313,6 +349,8 @@ public partial class MainWindow : UrsaWindow
     // ===== [新增] UDP：打开本地端口 =====
     private void Button_UdpDaKai_OnClick(object? sender, RoutedEventArgs e)
     {
+        if (_closing) return;
+
         string benDiIp = (Udp_BenDiIp.Text ?? string.Empty).Trim();
         int benDiDuanKou = (int)(Udp_BenDiDuanKou.Value ?? 0);
         string duiDuanIp = (Udp_DuiDuanIp.Text ?? string.Empty).Trim();
@@ -340,6 +378,7 @@ public partial class MainWindow : UrsaWindow
 
         SetUdpUiEnabled(false);
         LockOtherTabs(Tou_Udp);
+        UpdateStatus();//UDP 打开成功后立即刷新右上角状态
     }
 
     // ===== [新增] UDP：关闭 =====
@@ -420,41 +459,80 @@ public partial class MainWindow : UrsaWindow
     }
 
     /// <summary>
-    /// [新增] 关闭当前连接（串口 / TCP / UDP 通用），并恢复界面状态
+    /// [修改 V1.1.0] 关闭当前连接（串口 / TCP / UDP 通用）：
+    /// 界面立即回到“未连接”，真正的释放动作放到后台线程，避免关闭串口时界面卡顿
     /// </summary>
     private void CloseCurrent()
     {
         StopDingShiSend();
+        StopAllRowTiming();
+
+        if (_leiXing == LianJieLeiXing.Wu) return;
+
+        LianJieLeiXing leiXing = _leiXing;
+        Thread? readThread = _readThread;
 
         _isRunning = false;
-
-        switch (_leiXing)
-        {
-            case LianJieLeiXing.ChuanKou:
-                _port.Dispose();
-                break;
-            case LianJieLeiXing.Tcp:
-                _tcp.Close();
-                break;
-            case LianJieLeiXing.TcpServer:
-                _tcpServer.Close();
-                break;
-            case LianJieLeiXing.Udp:
-                _udp.Close();
-                break;
-        }
-
-        _readThread?.Join(500);
         _readThread = null;
         _leiXing = LianJieLeiXing.Wu;
 
+        // 先把界面切到未连接状态（状态栏提示正在断开），再在后台释放端口
         SetSerialUiEnabled(true);
         SetUdpUiEnabled(true);
-
-        // ===== [新增] TCP 页按工作模式恢复控件状态，并刷新状态提示 =====
         ApplyTcpModeUi();
         UnlockTabs();
-        UpdateStatus();
+        SetCloseInProgress(true);
+
+        ZhuangTaiWenBen.Text = "正在断开...";
+        ZhuangTaiDian.Fill = new SolidColorBrush(Color.Parse("#E0A030"));
+
+        Task.Run(() =>
+        {
+            try
+            {
+                switch (leiXing)
+                {
+                    case LianJieLeiXing.ChuanKou:
+                        _port.Dispose();
+                        break;
+                    case LianJieLeiXing.Tcp:
+                        _tcp.Close();
+                        break;
+                    case LianJieLeiXing.TcpServer:
+                        _tcpServer.Close();
+                        break;
+                    case LianJieLeiXing.Udp:
+                        _udp.Close();
+                        break;
+                }
+
+                readThread?.Join(1000);
+            }
+            catch { }
+            finally
+            {
+                Dispatcher.UIThread.Post(() =>
+                {
+                    SetSerialUiEnabled(true);
+                    SetUdpUiEnabled(true);
+                    ApplyTcpModeUi();
+                    SetCloseInProgress(false);
+                    UpdateStatus();
+                });
+            }
+        });
+    }
+
+    /// <summary>
+    /// [新增 V1.1.0] 关闭进行中：禁用各个“打开 / 连接”按钮，
+    /// 避免释放还没完成就又去抢同一个端口
+    /// </summary>
+    private void SetCloseInProgress(bool closing)
+    {
+        _closing = closing;
+        kaiShi.IsEnabled = !closing;
+        Tcp_LianJie.IsEnabled = !closing;
+        Udp_DaKai.IsEnabled = !closing;
     }
 
     // ===== [新增] 各页面控件可用状态 =====
@@ -502,6 +580,10 @@ public partial class MainWindow : UrsaWindow
                 ? $"正在监听，已连接客户端 {_tcpServer.ClientCount} 个"
                 : "服务端模式：点击“开始监听”，等待客户端接入。")
             : "客户端模式：填写对端 IP / 端口后点击“连接”。";
+
+        // 关闭进行中：不允许重新连接（否则会和后台释放动作抢端口）
+        if (_closing)
+            SetCloseInProgress(true);
     }
 
     /// <summary>
@@ -515,7 +597,7 @@ public partial class MainWindow : UrsaWindow
         switch (_leiXing)
         {
             case LianJieLeiXing.ChuanKou:
-                text = $"串口 {chuanKou.SelectedItem} 已打开";
+                text = $"串口 {_port.PortName ?? chuanKou.Text} 已打开";
                 color = "#2EA043";
                 break;
             case LianJieLeiXing.Tcp:
@@ -749,12 +831,28 @@ public partial class MainWindow : UrsaWindow
             return false;
         }
 
-        byte[] bytes;
-        if (_sendText)
+        // _sendText == true 表示“文本发送”，BuildSendBytes 要的是“是否 HEX”，所以取反
+        if (!BuildSendBytes(_model.SendText, !_sendText, showHint, out byte[] bytes))
+            return false;
+
+        return SendBytes(bytes, showHint);
+    }
+
+    /// <summary>
+    /// [新增 V1.1.0] 把输入内容转成要发送的字节：
+    /// 按 文本 / HEX 解析，并按“加回车换行”选项在末尾追加 CR LF（0D 0A）
+    /// </summary>
+    private bool BuildSendBytes(string text, bool isHex, bool showHint, out byte[] bytes)
+    {
+        bytes = [];
+
+        if (!isHex)
         {
-            bytes = System.Text.Encoding.UTF8.GetBytes(_model.SendText);
+            bytes = Encoding.UTF8.GetBytes(_appendNewLine ? text + "\r\n" : text);
+            return true;
         }
-        else if (!TryParseHexBytes(_model.SendText, out bytes, out string error))
+
+        if (!TryParseHexBytes(text, out byte[] hex, out string error))
         {
             if (showHint)
             {
@@ -762,6 +860,27 @@ public partial class MainWindow : UrsaWindow
             }
             return false;
         }
+
+        if (_appendNewLine)
+        {
+            bytes = new byte[hex.Length + HuiCheHuanHang.Length];
+            Buffer.BlockCopy(hex, 0, bytes, 0, hex.Length);
+            Buffer.BlockCopy(HuiCheHuanHang, 0, bytes, hex.Length, HuiCheHuanHang.Length);
+        }
+        else
+        {
+            bytes = hex;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// [新增 V1.1.0] 实际发送 + 发送计数（单条 / 多行 / 定时发送共用）
+    /// </summary>
+    private bool SendBytes(byte[] bytes, bool showHint)
+    {
+        if (bytes.Length == 0) return false;
 
         bool ok = _leiXing switch
         {
@@ -818,6 +937,14 @@ public partial class MainWindow : UrsaWindow
             return;
         }
 
+        // 服务端还没有客户端时不允许启动，避免“看着在发、实际没发”
+        if (_leiXing == LianJieLeiXing.TcpServer && _tcpServer.ClientCount == 0)
+        {
+            MessageBox.ShowAsync("当前还没有客户端接入，无法定时发送。", "提示",
+                MessageBoxIcon.Warning, MessageBoxButton.OK);
+            return;
+        }
+
         if (string.IsNullOrEmpty(_model.SendText))
         {
             MessageBox.ShowAsync("发送内容为空，无法定时发送。", "提示", MessageBoxIcon.Warning, MessageBoxButton.OK);
@@ -855,7 +982,7 @@ public partial class MainWindow : UrsaWindow
     }
 
     /// <summary>
-    /// [新增] 定时发送触发（复用统一发送逻辑，失败不弹窗，避免刷屏）
+    /// [新增] 定时发送触发（失败不弹窗，避免刷屏）
     /// </summary>
     private void DingShiTimer_OnTick(object? sender, EventArgs e)
     {
@@ -865,7 +992,327 @@ public partial class MainWindow : UrsaWindow
             return;
         }
 
-        SendCurrentText(false);
+        // 只有“内容非法”（如 HEX 格式错误）才停表；
+        // 瞬时发送失败（如服务端暂无客户端）保留定时，下个周期重试
+        if (!BuildSendBytes(_model.SendText, !_sendText, false, out byte[] bytes))
+        {
+            StopDingShiSend();
+            return;
+        }
+
+        SendBytes(bytes, false);
+    }
+
+    // ===================== [新增 V1.1.0] 多行发送 =====================
+
+    /// <summary>
+    /// 载入多行发送内容：首次运行（没有记录）时默认给 3 个空行
+    /// </summary>
+    private void LoadSendRows()
+    {
+        List<SendItemConfig>? items = App.AppConfig.MultiSendItems;
+        if (items == null || items.Count == 0)
+        {
+            items = new List<SendItemConfig>();
+            for (int i = 0; i < 3; i++)
+                items.Add(new SendItemConfig { Interval = App.AppConfig.SendInterval });
+        }
+
+        _model.SendRows.Clear();
+        foreach (SendItemConfig item in items)
+            _model.SendRows.Add(CreateSendRow(item));
+    }
+
+    /// <summary>由配置创建一行，并订阅内容变化（用于实时保存）</summary>
+    private SendRowViewModel CreateSendRow(SendItemConfig item)
+    {
+        int jianGe = item.Interval > 0 ? item.Interval : App.AppConfig.SendInterval;
+        if (jianGe < 10) jianGe = 10;
+
+        var row = new SendRowViewModel
+        {
+            Text = item.Text ?? string.Empty,
+            IsHex = item.IsHex,
+            Interval = jianGe,
+        };
+
+        row.PropertyChanged += SendRow_OnPropertyChanged;
+        return row;
+    }
+
+    private void SendRow_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // 运行状态（是否正在定时）属于界面状态，不写入配置
+        if (e.PropertyName is nameof(SendRowViewModel.IsTiming) or nameof(SendRowViewModel.TimingText))
+            return;
+
+        ScheduleSaveConfig();
+    }
+
+    /// <summary>[新增 V1.1.0] 单条发送内容变化：同样走防抖保存</summary>
+    private void Model_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainViewModel.SendText))
+            ScheduleSaveConfig();
+    }
+
+    /// <summary>把界面上的输入内容（单条 + 多行）写回配置对象</summary>
+    private void SyncInputsToConfig()
+    {
+        App.AppConfig.SendText = _model.SendText ?? string.Empty;
+        SyncSendRowsToConfig();
+    }
+
+    /// <summary>把界面上的多行内容写回配置对象</summary>
+    private void SyncSendRowsToConfig()
+    {
+        App.AppConfig.MultiSendItems = _model.SendRows
+            .Select(r => new SendItemConfig
+            {
+                Text = r.Text ?? string.Empty,
+                IsHex = r.IsHex,
+                Interval = ClampInterval(r),
+            })
+            .ToList();
+    }
+
+    private static int ClampInterval(SendRowViewModel row)
+    {
+        int jianGe = (int)(row.Interval ?? 1000);
+        return jianGe < 10 ? 10 : jianGe;
+    }
+
+    /// <summary>防抖保存：输入过程中不频繁写文件，停顿 500ms 后统一写入</summary>
+    private void ScheduleSaveConfig()
+    {
+        if (!_startupOk) return;
+
+        _saveTimer.Stop();
+        _saveTimer.Start();
+    }
+
+    private void SaveTimer_OnTick(object? sender, EventArgs e)
+    {
+        _saveTimer.Stop();
+        SyncInputsToConfig();
+        SaveConfig();
+    }
+
+    /// <summary>多行发送：发送某一行</summary>
+    private void RowSend_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: SendRowViewModel row }) return;
+        SendRow(row, true);
+    }
+
+    private bool SendRow(SendRowViewModel row, bool showHint)
+    {
+        if (string.IsNullOrWhiteSpace(row.Text))
+        {
+            if (showHint)
+                MessageBox.ShowAsync("本行发送内容为空。", "提示", MessageBoxIcon.Warning, MessageBoxButton.OK);
+            return false;
+        }
+
+        if (!IsChannelOpen())
+        {
+            if (showHint)
+            {
+                MessageBox.ShowAsync("请先打开串口，或建立 TCP / UDP 连接后再发送。", "未连接",
+                    MessageBoxIcon.Warning, MessageBoxButton.OK);
+            }
+            return false;
+        }
+
+        if (!BuildSendBytes(row.Text, row.IsHex, showHint, out byte[] bytes))
+            return false;
+
+        return SendBytes(bytes, showHint);
+    }
+
+    /// <summary>多行发送：某一行的定时发送 开始 / 停止</summary>
+    private void RowDingShi_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: SendRowViewModel row }) return;
+
+        if (row.IsTiming)
+        {
+            StopRowTiming(row);
+            return;
+        }
+
+        if (!IsChannelOpen())
+        {
+            MessageBox.ShowAsync("请先打开串口，或建立 TCP / UDP 连接后再使用定时发送。", "未连接",
+                MessageBoxIcon.Warning, MessageBoxButton.OK);
+            return;
+        }
+
+        // 服务端还没有客户端时不允许启动，避免“看着在发、实际没发”
+        if (_leiXing == LianJieLeiXing.TcpServer && _tcpServer.ClientCount == 0)
+        {
+            MessageBox.ShowAsync("当前还没有客户端接入，无法定时发送。", "提示",
+                MessageBoxIcon.Warning, MessageBoxButton.OK);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(row.Text))
+        {
+            MessageBox.ShowAsync("本行发送内容为空，无法定时发送。", "提示",
+                MessageBoxIcon.Warning, MessageBoxButton.OK);
+            return;
+        }
+
+        // HEX 行先校验一次格式，避免定时启动后每周期都静默失败
+        if (row.IsHex && !TryParseHexBytes(row.Text, out _, out string hexError))
+        {
+            MessageBox.ShowAsync(hexError, "输入格式错误", MessageBoxIcon.Error, MessageBoxButton.OK);
+            return;
+        }
+
+        row.IsTiming = true;
+        row.TimingText = "停止发送";
+        _rowNextTime[row] = Environment.TickCount64 + ClampInterval(row);
+
+        if (!_rowTimer.IsEnabled)
+            _rowTimer.Start();
+    }
+
+    /// <summary>多行定时发送统一 Tick：按每行自己的间隔判断是否到点</summary>
+    private void RowTimer_OnTick(object? sender, EventArgs e)
+    {
+        if (_rowNextTime.Count == 0)
+        {
+            _rowTimer.Stop();
+            return;
+        }
+
+        if (!IsChannelOpen())
+        {
+            StopAllRowTiming();
+            return;
+        }
+
+        long now = Environment.TickCount64;
+
+        foreach (SendRowViewModel row in _model.SendRows)
+        {
+            if (!row.IsTiming) continue;
+            if (!_rowNextTime.TryGetValue(row, out long due)) continue;
+            if (now < due) continue;
+
+            // 内容问题（被清空 / HEX 格式变非法）只停本行，避免“看着在发、实际没发”；
+            // 瞬时发送失败（如服务端刚断连、串口写超时）保留定时，下个周期重试
+            if (string.IsNullOrWhiteSpace(row.Text) ||
+                (row.IsHex && !TryParseHexBytes(row.Text, out _, out _)))
+            {
+                StopRowTiming(row);
+                continue;
+            }
+
+            SendRow(row, false);
+            _rowNextTime[row] = now + ClampInterval(row);
+        }
+    }
+
+    private void StopRowTiming(SendRowViewModel row)
+    {
+        row.IsTiming = false;
+        row.TimingText = "定时发送";
+        _rowNextTime.Remove(row);
+
+        if (_rowNextTime.Count == 0)
+            _rowTimer.Stop();
+    }
+
+    /// <summary>停止所有行的定时发送（关闭连接 / 关窗口时调用）</summary>
+    private void StopAllRowTiming()
+    {
+        foreach (SendRowViewModel row in _model.SendRows)
+        {
+            if (!row.IsTiming) continue;
+            row.IsTiming = false;
+            row.TimingText = "定时发送";
+        }
+
+        _rowNextTime.Clear();
+        _rowTimer.Stop();
+    }
+
+    /// <summary>多行发送：增加一行</summary>
+    private void AddSendRow_OnClick(object? sender, RoutedEventArgs e)
+    {
+        _model.SendRows.Add(CreateSendRow(new SendItemConfig { Interval = App.AppConfig.SendInterval }));
+        ScheduleSaveConfig();
+    }
+
+    /// <summary>多行发送：删除末行</summary>
+    private void RemoveLastSendRow_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (_model.SendRows.Count == 0) return;
+        RemoveSendRow(_model.SendRows[^1]);
+    }
+
+    /// <summary>多行发送：删除指定行</summary>
+    private void RowDelete_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: SendRowViewModel row }) return;
+        RemoveSendRow(row);
+    }
+
+    private void RemoveSendRow(SendRowViewModel row)
+    {
+        if (_model.SendRows.Count <= 1)
+        {
+            MessageBox.ShowAsync("至少保留一行。", "提示", MessageBoxIcon.Warning, MessageBoxButton.OK);
+            return;
+        }
+
+        StopRowTiming(row);
+        row.PropertyChanged -= SendRow_OnPropertyChanged;
+        _model.SendRows.Remove(row);
+        ScheduleSaveConfig();
+    }
+
+    /// <summary>[新增 V1.1.0] 加回车换行选项变化：立即保存</summary>
+    private void JiaHuiChe_OnIsCheckedChanged(object? sender, RoutedEventArgs e)
+    {
+        if (sender is CheckBox checkBox)
+            _appendNewLine = checkBox.IsChecked == true;
+
+        if (!_startupOk) return;
+
+        App.AppConfig.AppendNewLine = _appendNewLine;
+        SaveConfig();
+    }
+
+    /// <summary>[新增 V1.1.0] 发送区页签切换（单条数据 / 多行数据）</summary>
+    private void SendPage_OnChanged(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not RadioButton radioButton || radioButton.IsChecked != true) return;
+
+        int page = ReferenceEquals(radioButton, DuoHangYe) ? 1 : 0;
+        ApplySendPage(page);
+
+        if (!_startupOk) return;
+        if (App.AppConfig.SendTabIndex == page) return;
+
+        App.AppConfig.SendTabIndex = page;
+        SaveConfig();
+    }
+
+    /// <summary>[新增 V1.1.0] 按页签切换两个发送面板的显示</summary>
+    private void ApplySendPage(int page)
+    {
+        // XAML 加载过程中 RadioButton 状态变化可能早于面板创建，此时跳过
+        if (DanTiaoMianBan is null || DuoHangMianBan is null) return;
+
+        bool duoHang = page == 1;
+        DanTiaoMianBan.IsVisible = !duoHang;
+        DuoHangMianBan.IsVisible = duoHang;
+
+        // “文本/HEX 发送”只对单条数据生效（多行每行单独设置），多行页禁用避免误解
+        WenBenFaSong.IsEnabled = !duoHang;
     }
     
     private void ToggleButton_OnIsCheckedChanged3(object? sender, RoutedEventArgs e)
@@ -970,18 +1417,41 @@ public partial class MainWindow : UrsaWindow
     }
 
     /// <summary>
-    /// [新增] 关闭窗口前释放所有通道，避免端口被占用
+    /// [修改 V1.1.0] 关闭窗口前释放所有通道：
+    /// 配置先落盘，端口释放放后台执行（最多等 300ms），避免关窗时界面冻结
     /// </summary>
     protected override void OnClosing(WindowClosingEventArgs e)
     {
         try
         {
             StopDingShiSend();
+            StopAllRowTiming();
+
+            // 关窗口时无条件补写一次输入内容，不依赖防抖定时器是否在跑
+            _saveTimer.Stop();
+            SyncInputsToConfig();
+            SaveConfig();
+
             _isRunning = false;
-            _port.Dispose();
-            _tcp.Close();
-            _tcpServer.Close();
-            _udp.Close();
+            // 让释放期间的后台回调（如服务端 ClientsChanged）在守卫处直接短路
+            _leiXing = LianJieLeiXing.Wu;
+
+            // 已有后台释放在进行（点了“关闭串口/断开”马上关窗）时不再重复释放，随进程退出由系统回收
+            if (!_closing)
+            {
+                // 600ms 覆盖各帮助类内部的 Join / 读超时上限（200~500ms），同时不至于关窗卡顿
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        _port.Dispose();
+                        _tcp.Close();
+                        _tcpServer.Close();
+                        _udp.Close();
+                    }
+                    catch { }
+                }).Wait(600);
+            }
         }
         catch { }
 

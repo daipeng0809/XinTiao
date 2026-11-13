@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace XinTiao.Models;
@@ -5,9 +6,9 @@ namespace XinTiao.Models;
 public class AppConfig
 {
     [JsonPropertyName("AppName")]
-    public string AppName { get; set; } = "信息调试助手r";
+    public string AppName { get; set; } = "信息调试助手";
     [JsonPropertyName("AppVersion")]
-    public string AppVersion { get; set; } = "V1.0";
+    public string AppVersion { get; set; } = "V1.1.0";
     
     [JsonPropertyName("ThemeVariant")]
     public string ThemeVariant { get; set; } = "Default";
@@ -60,4 +61,35 @@ public class AppConfig
     public bool SendAsText { get; set; } = true;//true 文本发送，false HEX 发送
     [JsonPropertyName("SendInterval")]
     public int SendInterval { get; set; } = 1000;//定时发送间隔（毫秒）
+
+    // ===== [新增 V1.1.0] 单条数据页的发送内容（重启后恢复） =====
+    [JsonPropertyName("SendText")]
+    public string SendText { get; set; } = string.Empty;
+
+    // ===== [新增 V1.1.0] 发送时在数据末尾追加回车换行（\r\n） =====
+    [JsonPropertyName("AppendNewLine")]
+    public bool AppendNewLine { get; set; }
+
+    // ===== [新增 V1.1.0] 发送区当前页面：0 单条数据，1 多行数据 =====
+    [JsonPropertyName("SendTabIndex")]
+    public int SendTabIndex { get; set; }
+
+    // ===== [新增 V1.1.0] 多行发送内容（每行独立的 HEX 与定时间隔） =====
+    [JsonPropertyName("MultiSendItems")]
+    public List<SendItemConfig> MultiSendItems { get; set; } = new();
+}
+
+/// <summary>
+/// [新增 V1.1.0] 多行发送中的一行：发送内容、是否 HEX、定时发送间隔
+/// </summary>
+public class SendItemConfig
+{
+    [JsonPropertyName("Text")]
+    public string Text { get; set; } = string.Empty;
+
+    [JsonPropertyName("IsHex")]
+    public bool IsHex { get; set; }
+
+    [JsonPropertyName("Interval")]
+    public int Interval { get; set; } = 1000;//该行定时发送间隔（毫秒）
 }

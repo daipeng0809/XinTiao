@@ -35,6 +35,38 @@
             <Setter Property="MinWidth" Value="98" />
             <Setter Property="MinHeight" Value="32" />
         </Style>
+        <!-- ===== [新增 V1.1.0] 多行发送里的小按钮尺寸 ===== -->
+        <Style Selector="Button.rowAct">
+            <Setter Property="MinWidth" Value="52" />
+            <Setter Property="MinHeight" Value="26" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <!-- ===== [新增] 发送区页签：放在“发送区”标题边上，紧凑胶囊样式 ===== -->
+        <Style Selector="RadioButton.pageTab">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="MinHeight" Value="22" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="TabBg" Background="Transparent" CornerRadius="3" Padding="9,1">
+                        <ContentPresenter Name="PART_ContentPresenter"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="RadioButton.pageTab:pointerover /template/ Border#TabBg">
+            <Setter Property="Background" Value="#22808080" />
+        </Style>
+        <Style Selector="RadioButton.pageTab:checked">
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="RadioButton.pageTab:checked /template/ Border#TabBg">
+            <Setter Property="Background" Value="#2E7BE6" />
+        </Style>
     </u:UrsaWindow.Styles>
 
     <!-- ===== [新增] 首行 32px 为 UrsaWindow 自绘标题栏留白，避免内容被标题栏按钮遮挡 ===== -->
@@ -229,7 +261,7 @@
             <GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Transparent" />
 
             <!-- ===== 右侧：接收区 + 发送区 ===== -->
-            <Grid Grid.Column="2" RowDefinitions="*,0,224" Margin="0,0,0,0">
+            <Grid Grid.Column="2" RowDefinitions="*,4,270" Margin="0,0,0,0">
 
                 <!-- 接收区 -->
                 <Border Grid.Row="0" Theme="{StaticResource CardBorder}" Padding="10">
@@ -255,40 +287,119 @@
                     </Grid>
                 </Border>
 
-                <GridSplitter Grid.Row="1" ResizeDirection="Rows" Background="Transparent" />
+                <GridSplitter Grid.Row="1" ResizeDirection="Rows" Background="Transparent"
+                              Height="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
 
                 <!-- 发送区 -->
                 <Border Grid.Row="2" Theme="{StaticResource CardBorder}" Padding="10">
-                    <Grid RowDefinitions="Auto,*,Auto">
-                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,6">
+                    <Grid RowDefinitions="Auto,*">
+                        <!-- ===== [修改] 页签（单条数据 / 多行数据）直接放在“发送区”标题边上，省掉独立页签行 ===== -->
+                        <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,0,0,2">
                             <TextBlock Text="发送区" FontWeight="SemiBold" VerticalAlignment="Center" />
-                            <ToggleSwitch Grid.Column="2" Name="WenBenFaSong" IsCheckedChanged="ToggleButton_OnIsCheckedChanged3"
-                                          OnContent="文本发送" OffContent="HEX发送" IsChecked="True" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2"
+                                        Margin="10,0,0,0" VerticalAlignment="Center">
+                                <RadioButton Name="DanTiaoYe" Classes="pageTab" Content="单条数据"
+                                             GroupName="FaSongFenYe"
+                                             IsCheckedChanged="SendPage_OnChanged" />
+                                <RadioButton Name="DuoHangYe" Classes="pageTab" Content="多行数据"
+                                             GroupName="FaSongFenYe"
+                                             IsCheckedChanged="SendPage_OnChanged" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                                <!-- ===== [新增 V1.1.0] 发送时在数据末尾追加回车换行 ===== -->
+                                <CheckBox Name="JiaHuiCheHuanHang" Content="加回车换行" VerticalAlignment="Center"
+                                          ToolTip.Tip="勾选后，单条/多行发送的内容末尾都会追加 CR LF（0D 0A）"
+                                          IsCheckedChanged="JiaHuiChe_OnIsCheckedChanged" />
+                                <ToggleSwitch Name="WenBenFaSong" IsCheckedChanged="ToggleButton_OnIsCheckedChanged3"
+                                              ToolTip.Tip="仅对“单条数据”页生效；多行数据页每行单独设置 HEX"
+                                              OnContent="文本发送" OffContent="HEX发送" IsChecked="True" />
+                            </StackPanel>
                         </Grid>
 
-                        <TextBox Grid.Row="1" Text="{Binding SendText}" AcceptsReturn="True" TextWrapping="Wrap"
-                                 VerticalAlignment="Stretch" Height="NaN"
-                                 VerticalContentAlignment="Top" Margin="0,0,0,8"
-                                 PlaceholderText="请输入要发送的内容..." />
+                        <Grid Grid.Row="1">
+                            <!-- ===== 单条数据（原有内容） ===== -->
+                            <Grid Name="DanTiaoMianBan" RowDefinitions="*,Auto" Margin="0,4,0,0">
+                                <TextBox Text="{Binding SendText}" AcceptsReturn="True" TextWrapping="Wrap"
+                                         VerticalAlignment="Stretch" Height="NaN"
+                                         VerticalContentAlignment="Top" Margin="0,0,0,8"
+                                         PlaceholderText="请输入要发送的内容..." />
 
-                        <Grid Grid.Row="2">
-                            <StackPanel Orientation="Horizontal" Spacing="12"
-                                        HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                    <TextBlock Text="间隔" FontSize="12" VerticalAlignment="Center" Opacity="0.7" />
-                                    <NumericUpDown Name="DingShiJianGe" Width="96" Height="30"
-                                                   Minimum="10" Maximum="3600000" Increment="100"
-                                                   FormatString="0" Value="1000" />
-                                    <TextBlock Text="ms" FontSize="12" VerticalAlignment="Center" Opacity="0.7" />
-                                </StackPanel>
+                                <Grid Grid.Row="1">
+                                    <StackPanel Orientation="Horizontal" Spacing="12"
+                                                HorizontalAlignment="Right" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <TextBlock Text="间隔" FontSize="12" VerticalAlignment="Center" Opacity="0.7" />
+                                            <NumericUpDown Name="DingShiJianGe" Width="96" Height="30"
+                                                           Minimum="10" Maximum="3600000" Increment="100"
+                                                           FormatString="0" Value="1000" />
+                                            <TextBlock Text="ms" FontSize="12" VerticalAlignment="Center" Opacity="0.7" />
+                                        </StackPanel>
 
-                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                    <Button Name="DingShi" Content="定时发送" Classes="act"
-                                            Theme="{StaticResource OutlineButton}" Click="Button_OnClick5" />
-                                    <Button Content="发    送" Classes="Success act"
-                                            Theme="{StaticResource SolidButton}" Click="Button_OnClick2" />
-                                </StackPanel>
-                            </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <Button Name="DingShi" Content="定时发送" Classes="act"
+                                                    Theme="{StaticResource OutlineButton}" Click="Button_OnClick5" />
+                                            <Button Content="发    送" Classes="Success act"
+                                                    Theme="{StaticResource SolidButton}" Click="Button_OnClick2" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+
+                            <!-- ===== [新增 V1.1.0] 多行数据：每行独立 HEX / 间隔 / 发送（单行高度，尽量省空间） ===== -->
+                            <Grid Name="DuoHangMianBan" RowDefinitions="*,Auto" Margin="0,4,0,0" IsVisible="False">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                              HorizontalScrollBarVisibility="Disabled">
+                                    <ItemsControl Name="DuoHangLieBiao" ItemsSource="{Binding SendRows}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:SendRowViewModel">
+                                                <Border Margin="0,0,0,4" Padding="4" CornerRadius="4"
+                                                        BorderThickness="1" BorderBrush="#22808080">
+                                                    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                                                        <TextBox Text="{Binding Text}" Height="30" TextWrapping="NoWrap"
+                                                                 VerticalContentAlignment="Center"
+                                                                 PlaceholderText="本行要发送的内容..." />
+                                                        <CheckBox Grid.Column="1" Content="HEX" IsChecked="{Binding IsHex}"
+                                                                  Margin="8,0,0,0" VerticalAlignment="Center" />
+                                                        <TextBlock Grid.Column="2" Text="间隔" FontSize="12" Opacity="0.7"
+                                                                   Margin="10,0,4,0" VerticalAlignment="Center" />
+                                                        <NumericUpDown Grid.Column="3" Value="{Binding Interval}"
+                                                                       Width="78" Height="28" VerticalAlignment="Center"
+                                                                       Minimum="10" Maximum="3600000" Increment="100"
+                                                                       FormatString="0" ToolTip.Tip="该行定时发送间隔（毫秒）" />
+                                                        <TextBlock Grid.Column="4" Text="ms" FontSize="12" Opacity="0.7"
+                                                                   Margin="4,0,0,0" VerticalAlignment="Center" />
+                                                        <Button Grid.Column="5" Content="{Binding TimingText}"
+                                                                Classes="rowAct" Classes.Warning="{Binding IsTiming}"
+                                                                Margin="10,0,0,0" VerticalAlignment="Center"
+                                                                Theme="{StaticResource OutlineButton}"
+                                                                Click="RowDingShi_OnClick" />
+                                                        <Button Grid.Column="6" Content="发送" Classes="Success rowAct"
+                                                                Margin="6,0,0,0" VerticalAlignment="Center"
+                                                                Theme="{StaticResource SolidButton}"
+                                                                Click="RowSend_OnClick" />
+                                                        <Button Grid.Column="7" Content="删除" Classes="rowAct"
+                                                                Margin="6,0,0,0" VerticalAlignment="Center"
+                                                                Theme="{StaticResource OutlineButton}"
+                                                                Click="RowDelete_OnClick" />
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+
+                                <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="0,4,0,0">
+                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <Button Content="增加一行" Classes="rowAct"
+                                                Theme="{StaticResource OutlineButton}" Click="AddSendRow_OnClick" />
+                                        <Button Content="删除末行" Classes="rowAct"
+                                                Theme="{StaticResource OutlineButton}" Click="RemoveLastSendRow_OnClick" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" FontSize="12" Opacity="0.6"
+                                               VerticalAlignment="Center"
+                                               Text="每行可单独 HEX / 定时发送，内容与设置自动保存" />
+                                </Grid>
+                            </Grid>
                         </Grid>
                     </Grid>
                 </Border>

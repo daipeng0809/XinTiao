@@ -1,6 +1,6 @@
 {
   "AppName": "信息调试助手",
-  "AppVersion": "V1.0",
+  "AppVersion": "V1.1.0",
   "ThemeVariant": "Light",
   "TabItemIndex": 0,
   "ComPort": "COM1",
@@ -20,5 +20,9 @@
   "DisplayAsText": true,
   "DisplayTime": true,
   "SendAsText": true,
-  "SendInterval": 1000
+  "SendInterval": 1000,
+  "SendText": "",
+  "AppendNewLine": false,
+  "SendTabIndex": 0,
+  "MultiSendItems": []
 }

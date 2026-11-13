@@ -7,8 +7,9 @@
         <AssemblyName>信息调试助手</AssemblyName>
         <ApplicationIcon>wk-256x256.ico</ApplicationIcon>
         <Product>信息调试助手</Product>
-        <AssemblyVersion>1.0.0</AssemblyVersion>
-        <FileVersion>1.0.0</FileVersion>
+        <AssemblyVersion>1.1.0</AssemblyVersion>
+        <FileVersion>1.1.0</FileVersion>
+        <Version>1.1.0</Version>
 
         <!-- ===== [新增] AOT / 跨平台发布相关配置 ===== -->
         <!-- 绑定必须在编译期生成，NativeAOT 下反射绑定不可用 -->
@@ -47,6 +48,19 @@
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </None>
       <None Update="Config\AppConfig.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </None>
+      <!-- ===== [新增 V1.1.0] Linux 安装脚本与 desktop 模板随发布包一起输出 ===== -->
+      <None Update="install.sh">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </None>
+      <None Update="XinTiao.desktop">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </None>
+      <None Update="README.md">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </None>

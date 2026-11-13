@@ -1,6 +1,6 @@
 {
-  "AppName": "\u4FE1\u606F\u8C03\u8BD5\u52A9\u624Br",
-  "AppVersion": "V1.0",
+  "AppName": "\u4FE1\u606F\u8C03\u8BD5\u52A9\u624B",
+  "AppVersion": "V1.1.0",
   "ThemeVariant": "Light",
   "TabItemIndex": 0,
   "ComPort": "COM1",
@@ -20,5 +20,25 @@
   "DisplayAsText": true,
   "DisplayTime": true,
   "SendAsText": true,
-  "SendInterval": 1000
+  "SendInterval": 1000,
+  "SendText": "123132",
+  "AppendNewLine": false,
+  "SendTabIndex": 0,
+  "MultiSendItems": [
+    {
+      "Text": "",
+      "IsHex": false,
+      "Interval": 1000
+    },
+    {
+      "Text": "",
+      "IsHex": false,
+      "Interval": 1000
+    },
+    {
+      "Text": "",
+      "IsHex": false,
+      "Interval": 1000
+    }
+  ]
 }
