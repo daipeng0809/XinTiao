@@ -1313,6 +1313,7 @@ public partial class MainWindow : UrsaWindow
 
         // “文本/HEX 发送”只对单条数据生效（多行每行单独设置），多行页禁用避免误解
         WenBenFaSong.IsEnabled = !duoHang;
+        WenBenFaSong.IsVisible = !duoHang;
     }
     
     private void ToggleButton_OnIsCheckedChanged3(object? sender, RoutedEventArgs e)
