@@ -70,11 +70,11 @@
     </u:UrsaWindow.Styles>
 
     <!-- ===== [新增] 首行 32px 为 UrsaWindow 自绘标题栏留白，避免内容被标题栏按钮遮挡 ===== -->
-    <Grid RowDefinitions="32,Auto,*,Auto">
+    <Grid RowDefinitions="32,Auto,*,40">
 
         <!-- ===================== 顶部：功能说明 + 连接状态 ===================== -->
-        <Border Grid.Row="1" Padding="14,8" BorderThickness="0,0,0,1" BorderBrush="#22808080">
-            <Grid ColumnDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" Padding="14,8" BorderThickness="0,0,0,1" BorderBrush="#22808080">
+            <Grid ColumnDefinitions="Auto,*,Auto,100">
                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <Border Width="4" Height="18" CornerRadius="2" Background="#2E7BE6" />
                     <TextBlock Text="信息调试助手" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -129,11 +129,11 @@
                                     <TextBlock Grid.Row="2" Grid.Column="0" Classes="fieldLabel" Margin="0,8,0,0" Text="校验位" />
                                     <ComboBox Grid.Row="2" Width="150" Grid.Column="1" Name="jiaoYan" Margin="0,8,0,0"
                                               Height="30" SelectedIndex="0" MaxDropDownHeight="200">
-                                        <ComboBoxItem>None</ComboBoxItem>
-                                        <ComboBoxItem>Odd</ComboBoxItem>
-                                        <ComboBoxItem>Even</ComboBoxItem>
-                                        <ComboBoxItem>Mark</ComboBoxItem>
-                                        <ComboBoxItem>Space</ComboBoxItem>
+                                        <ComboBoxItem Tag="None">无校验</ComboBoxItem>
+                                        <ComboBoxItem Tag="Odd">奇校验</ComboBoxItem>
+                                        <ComboBoxItem Tag="Even">偶校验</ComboBoxItem>
+                                        <ComboBoxItem Tag="Mark">标记校验</ComboBoxItem>
+                                        <ComboBoxItem Tag="Space">空格校验</ComboBoxItem>
                                     </ComboBox>
 
                                     <TextBlock Grid.Row="3" Grid.Column="0" Classes="fieldLabel" Margin="0,8,0,0" Text="数据位" />
@@ -148,10 +148,9 @@
                                     <TextBlock Grid.Row="4" Grid.Column="0" Classes="fieldLabel" Margin="0,8,0,0" Text="停止位" />
                                     <ComboBox Grid.Row="4" Width="150" Grid.Column="1" Name="tingZhiWei" Margin="0,8,0,0"
                                               Height="30" SelectedIndex="0" MaxDropDownHeight="200">
-                                        <ComboBoxItem>One</ComboBoxItem>
-                                        <ComboBoxItem>Two</ComboBoxItem>
-                                        <ComboBoxItem>OnePointFive</ComboBoxItem>
-                                        <ComboBoxItem>None</ComboBoxItem>
+                                        <ComboBoxItem Tag="One">1</ComboBoxItem>
+                                        <ComboBoxItem Tag="OnePointFive">1.5</ComboBoxItem>
+                                        <ComboBoxItem Tag="Two">2</ComboBoxItem>
                                     </ComboBox>
                                 </Grid>
 
@@ -307,9 +306,9 @@
                             </StackPanel>
                             <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
                                 <!-- ===== [新增 V1.1.0] 发送时在数据末尾追加回车换行 ===== -->
-                                <CheckBox Name="JiaHuiCheHuanHang" Content="加回车换行" VerticalAlignment="Center"
-                                          ToolTip.Tip="勾选后，单条/多行发送的内容末尾都会追加 CR LF（0D 0A）"
-                                          IsCheckedChanged="JiaHuiChe_OnIsCheckedChanged" />
+                                <ToggleSwitch Name="JiaHuiCheHuanHang" OnContent="加回车换行" OffContent="未加回车换行" IsChecked="False"
+                                              ToolTip.Tip="启用后，单条/多行发送的内容末尾都会追加 CR LF（0D 0A）"
+                                              IsCheckedChanged="JiaHuiChe_OnIsCheckedChanged" />
                                 <ToggleSwitch Name="WenBenFaSong" IsCheckedChanged="ToggleButton_OnIsCheckedChanged3"
                                               ToolTip.Tip="仅对“单条数据”页生效；多行数据页每行单独设置 HEX"
                                               OnContent="文本发送" OffContent="HEX发送" IsChecked="True" />
@@ -322,7 +321,7 @@
                                 <TextBox Text="{Binding SendText}" AcceptsReturn="True" TextWrapping="Wrap"
                                          VerticalAlignment="Stretch" Height="NaN"
                                          VerticalContentAlignment="Top" Margin="0,0,0,8"
-                                         PlaceholderText="请输入要发送的内容..." />
+                                         PlaceholderText="请输入要发送的内容..." Classes="TextArea ClearButton"/>
 
                                 <Grid Grid.Row="1">
                                     <StackPanel Orientation="Horizontal" Spacing="12"
@@ -357,7 +356,7 @@
                                                     <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                                                         <TextBox Text="{Binding Text}" Height="30" TextWrapping="NoWrap"
                                                                  VerticalContentAlignment="Center"
-                                                                 PlaceholderText="本行要发送的内容..." />
+                                                                 PlaceholderText="本行要发送的内容..." Classes="ClearButton"/>
                                                         <CheckBox Grid.Column="1" Content="HEX" IsChecked="{Binding IsHex}"
                                                                   Margin="8,0,0,0" VerticalAlignment="Center" />
                                                         <TextBlock Grid.Column="2" Text="间隔" FontSize="12" Opacity="0.7"
@@ -421,6 +420,8 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Button Content="校验计算" Click="Button_OnClick6" Height="26"
+                            Theme="{StaticResource SolidButton}" Classes="Secondary" />
                     <Button Content="清空接收" Click="Button_OnClick3" Height="26"
                             Theme="{StaticResource OutlineButton}" />
                     <Button Content="清空发送" Click="Button_OnClick4" Height="26"

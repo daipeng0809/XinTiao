@@ -1,0 +1,159 @@
+<u:UrsaWindow xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+              xmlns:u="https://irihi.tech/ursa"
+              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="520"
+              Width="800" Height="520" MinWidth="700" MinHeight="480"
+              x:Class="XinTiao.Views.JiaoYan"
+              Icon="/Assets/wk-256x256.ico"
+              WindowStartupLocation="CenterOwner"
+              FontFamily="{DynamicResource AppFontFamily}"
+              Opened="JiaoYan_OnOpened"
+              Title="数据校验">
+
+    <u:UrsaWindow.Styles>
+        <Style Selector="TextBlock.groupTitle">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Opacity" Value="0.65" />
+        </Style>
+        <Style Selector="TextBlock.fieldLabel">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Opacity" Value="0.85" />
+        </Style>
+        <Style Selector="Button.rowAct">
+            <Setter Property="MinWidth" Value="48" />
+            <Setter Property="MinHeight" Value="26" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <!-- 校验结果数值：等宽字体，逐字节核对时对齐 -->
+        <Style Selector="SelectableTextBlock.resultValue">
+            <Setter Property="FontFamily" Value="Consolas,DejaVu Sans Mono,Cascadia Mono" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <!-- 输入不合法时状态提示变红 -->
+        <Style Selector="TextBlock.statusError">
+            <Setter Property="Foreground" Value="#D64545" />
+        </Style>
+    </u:UrsaWindow.Styles>
+
+    <!-- 首行 32px 为 UrsaWindow 自绘标题栏留白，左侧放窗口标题、右侧留给标题栏按钮 -->
+    <Grid RowDefinitions="32,*">
+        <Border Grid.Row="0" Padding="14,0" BorderThickness="0,0,0,1" BorderBrush="#22808080">
+            <Grid ColumnDefinitions="Auto,*,100">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Border Width="4" Height="18" CornerRadius="2" Background="#2E7BE6" />
+                    <TextBlock Text="数据校验" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" RowDefinitions="Auto,8,*" Margin="10,0,10,10">
+
+            <!-- ===================== 上部：左侧校验类型 + 右侧输入数据 ===================== -->
+            <Grid Grid.Row="0" ColumnDefinitions="220,8,*">
+
+                <!-- 左：校验类型 -->
+                <Border Theme="{StaticResource CardBorder}" Padding="10">
+                    <Grid RowDefinitions="Auto,*">
+                        <TextBlock Classes="groupTitle" Text="校验类型" />
+                        <ListBox Grid.Row="1" Name="LeiXingLieBiao" Margin="0,6,0,0"
+                                 SelectedIndex="0" SelectionChanged="LeiXing_OnSelectionChanged">
+                            <ListBoxItem Tag="checksum" Content="CheckSum 累加和" />
+                            <ListBoxItem Tag="bcc" Content="BCC 异或校验" />
+                            <ListBoxItem Tag="crc" Content="CRC 循环冗余校验" />
+                            <ListBoxItem Tag="lrc" Content="LRC 纵向冗余校验" />
+                        </ListBox>
+                    </Grid>
+                </Border>
+
+                <!-- 右：输入数据 -->
+                <Border Grid.Column="2" Theme="{StaticResource CardBorder}" Padding="10">
+                    <Grid RowDefinitions="Auto,6,*,Auto">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <TextBlock Text="输入数据" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <ToggleSwitch Grid.Column="2" Name="HeXinXi"
+                                          OnContent="HEX 输入" OffContent="字符输入" IsChecked="True"
+                                          ToolTip.Tip="勾选时按十六进制解析（可空格分隔，如 01 03 00 00）；取消勾选则按 UTF-8 字符参与校验"
+                                          IsCheckedChanged="HeXinXi_OnIsCheckedChanged" />
+                        </Grid>
+
+                        <TextBox Grid.Row="2" Name="ShuRuKuang" AcceptsReturn="True" TextWrapping="Wrap"
+                                 VerticalAlignment="Stretch" Height="NaN" MinHeight="110"
+                                 VerticalContentAlignment="Top" Classes="TextArea ClearButton"
+                                 PlaceholderText="例如：01 03 00 00 00 0A"
+                                 TextChanged="ShuRuKuang_OnTextChanged" />
+
+                        <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+                            <TextBlock Name="ShuRuXinXi" Text="共 0 字节" FontSize="12" Opacity="0.6"
+                                       VerticalAlignment="Center" TextWrapping="Wrap" />
+                            <Button Grid.Column="1" Content="清空" Classes="rowAct" Margin="8,0,0,0"
+                                    Theme="{StaticResource OutlineButton}" Click="QingKong_OnClick" />
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ===================== 下部：具体校验方式 + 多进制结果 ===================== -->
+            <Border Grid.Row="2" Theme="{StaticResource CardBorder}" Padding="10">
+                <Grid RowDefinitions="Auto,6,Auto,10,Auto" VerticalAlignment="Top">
+
+                    <Grid ColumnDefinitions="Auto,240,*,Auto">
+                        <TextBlock Classes="fieldLabel" Text="校验方式" />
+                        <ComboBox Grid.Column="1" Name="FangShiXuanZe" Height="30" Margin="8,0,0,0"
+                                  HorizontalAlignment="Stretch" SelectionChanged="FangShi_OnSelectionChanged" />
+                        <CheckBox Grid.Column="3" Name="DiZiJie" Content="低字节在前（小端）" VerticalAlignment="Center"
+                                  ToolTip.Tip="勾选后 HEX 结果按低字节在前排列，方便直接粘贴到指令末尾；DEC / OCT / BIN 仍显示数值本身"
+                                  IsCheckedChanged="DiZiJie_OnIsCheckedChanged" />
+                    </Grid>
+
+                    <TextBlock Grid.Row="2" Name="FangShiShuoMing" FontSize="12" Opacity="0.6" TextWrapping="Wrap" />
+
+                    <Grid Grid.Row="4" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,2">
+                            <TextBlock Text="校验结果" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Name="FuZhiQuanBu" Content="复制全部" Classes="rowAct" IsEnabled="False"
+                                    Theme="{StaticResource OutlineButton}" Tag="all" Click="JieGuoCopy_OnClick" />
+                        </Grid>
+
+                        <Grid Grid.Row="1" ColumnDefinitions="70,*,Auto" Margin="0,4,0,0">
+                            <TextBlock Classes="fieldLabel" Text="十六进制" />
+                            <SelectableTextBlock Grid.Column="1" Name="JieGuoHex" Classes="resultValue"
+                                                 Text="—" TextWrapping="Wrap" />
+                            <Button Grid.Column="2" Name="FuZhiHex" Content="复制" Classes="rowAct" IsEnabled="False"
+                                    Theme="{StaticResource OutlineButton}" Tag="hex" Click="JieGuoCopy_OnClick" />
+                        </Grid>
+
+                        <Grid Grid.Row="2" ColumnDefinitions="70,*,Auto" Margin="0,4,0,0">
+                            <TextBlock Classes="fieldLabel" Text="十进制" />
+                            <SelectableTextBlock Grid.Column="1" Name="JieGuoDec" Classes="resultValue"
+                                                 Text="—" TextWrapping="Wrap" />
+                            <Button Grid.Column="2" Name="FuZhiDec" Content="复制" Classes="rowAct" IsEnabled="False"
+                                    Theme="{StaticResource OutlineButton}" Tag="dec" Click="JieGuoCopy_OnClick" />
+                        </Grid>
+
+                        <Grid Grid.Row="3" ColumnDefinitions="70,*,Auto" Margin="0,4,0,0">
+                            <TextBlock Classes="fieldLabel" Text="八进制" />
+                            <SelectableTextBlock Grid.Column="1" Name="JieGuoOct" Classes="resultValue"
+                                                 Text="—" TextWrapping="Wrap" />
+                            <Button Grid.Column="2" Name="FuZhiOct" Content="复制" Classes="rowAct" IsEnabled="False"
+                                    Theme="{StaticResource OutlineButton}" Tag="oct" Click="JieGuoCopy_OnClick" />
+                        </Grid>
+
+                        <Grid Grid.Row="4" ColumnDefinitions="70,*,Auto" Margin="0,4,0,0">
+                            <TextBlock Classes="fieldLabel" Text="二进制" />
+                            <SelectableTextBlock Grid.Column="1" Name="JieGuoBin" Classes="resultValue"
+                                                 Text="—" TextWrapping="Wrap" />
+                            <Button Grid.Column="2" Name="FuZhiBin" Content="复制" Classes="rowAct" IsEnabled="False"
+                                    Theme="{StaticResource OutlineButton}" Tag="bin" Click="JieGuoCopy_OnClick" />
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</u:UrsaWindow>

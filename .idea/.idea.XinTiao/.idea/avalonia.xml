@@ -4,6 +4,7 @@
     <option name="projectPerEditor">
       <map>
         <entry key="App.axaml" value="XinTiao.csproj" />
+        <entry key="Views/JiaoYan.axaml" value="XinTiao.csproj" />
         <entry key="Views/MainWindow.axaml" value="XinTiao.csproj" />
       </map>
     </option>

@@ -8,7 +8,7 @@ public class AppConfig
     [JsonPropertyName("AppName")]
     public string AppName { get; set; } = "信息调试助手";
     [JsonPropertyName("AppVersion")]
-    public string AppVersion { get; set; } = "V1.1.0";
+    public string AppVersion { get; set; } = "V1.2.0";
     
     [JsonPropertyName("ThemeVariant")]
     public string ThemeVariant { get; set; } = "Default";

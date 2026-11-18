@@ -61,6 +61,7 @@ public partial class MainWindow : UrsaWindow
     private bool _closing;//正在关闭连接（关闭动作已放后台线程执行）
 
     private bool _startupOk = false;//启动完成
+    private JiaoYan? _jy = null;//校验窗口
     
     private void Control_OnLoaded(object? sender, RoutedEventArgs e)
     {
@@ -114,7 +115,7 @@ public partial class MainWindow : UrsaWindow
         
         jiaoYan.SelectedItem = jiaoYan.Items
             .OfType<ComboBoxItem>()
-            .FirstOrDefault(i => i.Content?.ToString() == App.AppConfig.Parity);
+            .FirstOrDefault(i => i.Tag.ToString() == App.AppConfig.Parity);
         
         shuJuWei.SelectedItem = shuJuWei.Items
             .OfType<ComboBoxItem>()
@@ -122,7 +123,7 @@ public partial class MainWindow : UrsaWindow
         
         tingZhiWei.SelectedItem = tingZhiWei.Items
             .OfType<ComboBoxItem>()
-            .FirstOrDefault(i => i.Content?.ToString() == App.AppConfig.StopBits);
+            .FirstOrDefault(i => i.Tag.ToString() == App.AppConfig.StopBits);
 
         // ===== [新增] 载入 TCP 工作模式（Client / Server） =====
         _tcpMode = string.Equals(App.AppConfig.TcpMode, "Server", StringComparison.OrdinalIgnoreCase)
@@ -242,9 +243,11 @@ public partial class MainWindow : UrsaWindow
         {
             string name = chuanKou.Text ?? "";
             int baudRate = int.Parse(chuanRate.Text!);
-            Enum.TryParse<Parity>(jiaoYan.Text, out Parity parity);
+            var teBox = (ComboBoxItem)jiaoYan.SelectedValue;
+            Enum.TryParse<Parity>(teBox.Tag.ToString(), out Parity parity);
             int shuJU = int.Parse(shuJuWei.Text);
-            Enum.TryParse<StopBits>(tingZhiWei.Text, out StopBits stopBits);
+            var teBox2 = (ComboBoxItem)tingZhiWei.SelectedValue;
+            Enum.TryParse<StopBits>(teBox2.Tag.ToString(), out StopBits stopBits);
 
             // 读超时改小：关闭串口时读取线程能更快退出，避免关串口卡顿
             if (!_port.Open(name, baudRate, parity, shuJU, stopBits, 200))
@@ -1277,13 +1280,15 @@ public partial class MainWindow : UrsaWindow
     /// <summary>[新增 V1.1.0] 加回车换行选项变化：立即保存</summary>
     private void JiaHuiChe_OnIsCheckedChanged(object? sender, RoutedEventArgs e)
     {
-        if (sender is CheckBox checkBox)
-            _appendNewLine = checkBox.IsChecked == true;
+        if (sender is ToggleButton toggleButton)
+        {
+            _appendNewLine = toggleButton.IsChecked ?? false;
 
-        if (!_startupOk) return;
-
-        App.AppConfig.AppendNewLine = _appendNewLine;
-        SaveConfig();
+            if (!_startupOk) return;
+            App.AppConfig.AppendNewLine = _appendNewLine;
+            SaveConfig();
+        }
+            
     }
 
     /// <summary>[新增 V1.1.0] 发送区页签切换（单条数据 / 多行数据）</summary>
@@ -1436,7 +1441,9 @@ public partial class MainWindow : UrsaWindow
             _isRunning = false;
             // 让释放期间的后台回调（如服务端 ClientsChanged）在守卫处直接短路
             _leiXing = LianJieLeiXing.Wu;
-
+            // 关闭校验窗口
+            _jy?.Close();
+            _jy = null;
             // 已有后台释放在进行（点了“关闭串口/断开”马上关窗）时不再重复释放，随进程退出由系统回收
             if (!_closing)
             {
@@ -1457,6 +1464,22 @@ public partial class MainWindow : UrsaWindow
         catch { }
 
         base.OnClosing(e);
+    }
+
+    /// <summary>
+    /// [修改] 打开校验窗口：已打开时直接激活，避免重复创建；关闭后重置引用
+    /// </summary>
+    private void Button_OnClick6(object? sender, RoutedEventArgs e)
+    {
+        if (_jy != null)
+        {
+            _jy.Activate();
+            return;
+        }
+
+        _jy = new JiaoYan();
+        _jy.Closed += (_, _) => _jy = null;
+        _jy.Show(this);
     }
 }
 
