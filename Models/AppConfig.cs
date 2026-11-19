@@ -8,7 +8,7 @@ public class AppConfig
     [JsonPropertyName("AppName")]
     public string AppName { get; set; } = "信息调试助手";
     [JsonPropertyName("AppVersion")]
-    public string AppVersion { get; set; } = "V1.2.0";
+    public string AppVersion { get; set; } = "V1.3.0";
     
     [JsonPropertyName("ThemeVariant")]
     public string ThemeVariant { get; set; } = "Default";
@@ -57,6 +57,15 @@ public class AppConfig
     public bool DisplayAsText { get; set; } = true;//true 文本显示，false HEX 显示
     [JsonPropertyName("DisplayTime")]
     public bool DisplayTime { get; set; } = true;//是否显示接收时间
+
+    // ===== [新增 V1.2.0] 是否在接收区显示自己发送的内容 =====
+    [JsonPropertyName("DisplaySend")]
+    public bool DisplaySend { get; set; }
+
+    // ===== [新增 V1.2.0] 接收区显示的内容是否保存到 Data 文件夹 =====
+    [JsonPropertyName("SaveReceivedData")]
+    public bool SaveReceivedData { get; set; } = true;
+
     [JsonPropertyName("SendAsText")]
     public bool SendAsText { get; set; } = true;//true 文本发送，false HEX 发送
     [JsonPropertyName("SendInterval")]

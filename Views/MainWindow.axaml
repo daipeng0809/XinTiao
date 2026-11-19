@@ -11,6 +11,7 @@
         Icon="/Assets/wk-256x256.ico"
         WindowStartupLocation="CenterScreen"
         FontFamily="{DynamicResource AppFontFamily}"
+        Background="{DynamicResource AppWindowBackground}"
         Loaded="Control_OnLoaded"
         Title="信息调试助手">
 
@@ -65,7 +66,7 @@
             <Setter Property="Foreground" Value="White" />
         </Style>
         <Style Selector="RadioButton.pageTab:checked /template/ Border#TabBg">
-            <Setter Property="Background" Value="#2E7BE6" />
+            <Setter Property="Background" Value="{DynamicResource AppAccent}" />
         </Style>
     </u:UrsaWindow.Styles>
 
@@ -76,8 +77,11 @@
         <Border Grid.Row="0" Padding="14,8" BorderThickness="0,0,0,1" BorderBrush="#22808080">
             <Grid ColumnDefinitions="Auto,*,Auto,100">
                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Border Width="4" Height="18" CornerRadius="2" Background="#2E7BE6" />
+                    <Border Width="4" Height="18" CornerRadius="2" Background="{DynamicResource AppAccent}" />
                     <TextBlock Text="信息调试助手" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <!-- ===== [新增 V1.3.0] 名称后面显示版本号（运行时从程序集版本自动填充） ===== -->
+                    <TextBlock Name="BanBenHao" Text="V1.3.0" FontSize="11" Opacity="0.55"
+                               VerticalAlignment="Center" />
                 </StackPanel>
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <Ellipse Name="ZhuangTaiDian" Width="8" Height="8" Fill="#9AA4B2" VerticalAlignment="Center" />
@@ -87,7 +91,7 @@
         </Border>
 
         <!-- ===================== 主体 ===================== -->
-        <Grid Grid.Row="2" Margin="04,04,04,04">
+        <Grid Grid.Row="2" Margin="2,2,2,2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="280" MinWidth="280" MaxWidth="280" />
                 <ColumnDefinition Width="0" />
@@ -95,12 +99,12 @@
             </Grid.ColumnDefinitions>
 
             <!-- ===== 左侧：连接设置 ===== -->
-            <Border Grid.Column="0" Theme="{StaticResource CardBorder}" Padding="10">
+            <Border Grid.Column="0" Theme="{StaticResource CardBorder}" Padding="6">
                 <TabControl Name="ZhuTabControl" SelectionChanged="ZhuTabControl_OnSelectionChanged">
 
                     <!-- ===== 串口页 ===== -->
                     <TabItem Name="Tou_Com" Header="串口">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,6,0,0">
                             <StackPanel Spacing="8">
                                 <TextBlock Classes="groupTitle" Text="串口参数" />
 
@@ -166,7 +170,7 @@
 
                     <!-- ===== TCP 页：新增 工作模式（客户端 / 服务端） ===== -->
                     <TabItem Name="Tou_Tcp" Header="TCP">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,6,0,0">
                             <StackPanel Spacing="8">
                                 <Grid ColumnDefinitions="84,*">
                                     <TextBlock Grid.Column="0" Classes="fieldLabel" Text="工作模式" />
@@ -216,7 +220,7 @@
 
                     <!-- ===== UDP 页 ===== -->
                     <TabItem Name="Tou_Udp" Header="UDP">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,6,0,0">
                             <StackPanel Spacing="8">
                                 <TextBlock Classes="groupTitle" Text="本地参数" />
                                 <Grid ColumnDefinitions="84,*" RowDefinitions="Auto,Auto">
@@ -260,14 +264,22 @@
             <GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Transparent" />
 
             <!-- ===== 右侧：接收区 + 发送区 ===== -->
-            <Grid Grid.Column="2" RowDefinitions="*,4,270" Margin="0,0,0,0">
+            <Grid Grid.Column="2" RowDefinitions="*,2,270">
 
                 <!-- 接收区 -->
-                <Border Grid.Row="0" Theme="{StaticResource CardBorder}" Padding="10">
+                <Border Grid.Row="0" Theme="{StaticResource CardBorder}" Padding="6">
                     <Grid RowDefinitions="Auto,*">
-                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,6">
+                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,4">
                             <TextBlock Text="接收区" FontWeight="SemiBold" VerticalAlignment="Center" />
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14">
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+                                <!-- ===== [新增 V1.2.0] 是否在接收区显示自己发送的内容 ===== -->
+                                <ToggleSwitch Name="XianShiFaSong" IsCheckedChanged="ToggleButton_OnIsCheckedChanged4"
+                                              OnContent="显示发送" OffContent="不显示发送" IsChecked="False"
+                                              ToolTip.Tip="开启后，自己发送的数据也显示在接收框（前缀“发送=>”）" />
+                                <!-- ===== [新增 V1.2.0] 接收框显示的内容是否保存到 Data 文件夹 ===== -->
+                                <ToggleSwitch Name="BaoCunShuJu" IsCheckedChanged="ToggleButton_OnIsCheckedChanged5"
+                                              OnContent="保存数据" OffContent="不保存数据" IsChecked="True"
+                                              ToolTip.Tip="开启后，接收框显示的内容会保存到程序目录 Data 文件夹（文件名按日期时间命名）" />
                                 <ToggleSwitch Name="XianShiShiJian" IsCheckedChanged="ToggleButton_OnIsCheckedChanged2"
                                               OnContent="显示时间" OffContent="不显示时间" IsChecked="True" />
                                 <ToggleSwitch Name="XianShiWenBen" IsCheckedChanged="ToggleButton_OnIsCheckedChanged1"
@@ -279,7 +291,7 @@
                                  TextChanged="TextBox_OnTextChanged"
                                  IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
                                  Theme="{StaticResource LooklessTextBox}" Background="Transparent"
-                                 BorderThickness="0" Padding="4"
+                                 BorderThickness="0" Padding="2"
                                  VerticalAlignment="Stretch" Height="NaN"
                                  VerticalContentAlignment="Top"
                                  PlaceholderText="接收的内容..." />
@@ -287,10 +299,10 @@
                 </Border>
 
                 <GridSplitter Grid.Row="1" ResizeDirection="Rows" Background="Transparent"
-                              Height="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+                              Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
 
                 <!-- 发送区 -->
-                <Border Grid.Row="2" Theme="{StaticResource CardBorder}" Padding="10">
+                <Border Grid.Row="2" Theme="{StaticResource CardBorder}" Padding="6">
                     <Grid RowDefinitions="Auto,*">
                         <!-- ===== [修改] 页签（单条数据 / 多行数据）直接放在“发送区”标题边上，省掉独立页签行 ===== -->
                         <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="0,0,0,2">
@@ -321,7 +333,7 @@
                                 <TextBox Text="{Binding SendText}" AcceptsReturn="True" TextWrapping="Wrap"
                                          VerticalAlignment="Stretch" Height="NaN"
                                          VerticalContentAlignment="Top" Margin="0,0,0,8"
-                                         PlaceholderText="请输入要发送的内容..." Classes="TextArea ClearButton"/>
+                                         PlaceholderText="请输入要发送的内容..."/>
 
                                 <Grid Grid.Row="1">
                                     <StackPanel Orientation="Horizontal" Spacing="12"
@@ -426,8 +438,16 @@
                             Theme="{StaticResource OutlineButton}" />
                     <Button Content="清空发送" Click="Button_OnClick4" Height="26"
                             Theme="{StaticResource OutlineButton}" />
-                    <ToggleSwitch Name="ZhuTi" IsCheckedChanged="ToggleButton_OnIsCheckedChanged"
-                                  OnContent="亮色" OffContent="暗色" IsChecked="True" VerticalAlignment="Center" />
+                    <!-- ===== [修改 V1.3.0] 配色方案下拉框（替换原亮色/暗色开关） ===== -->
+                    <ComboBox Name="PeiSe" Width="108" Height="26" VerticalAlignment="Center"
+                              SelectionChanged="PeiSe_OnSelectionChanged" ToolTip.Tip="切换配色方案">
+                        <ComboBoxItem Tag="Light">浅色</ComboBoxItem>
+                        <ComboBoxItem Tag="Dark">深色</ComboBoxItem>
+                        <ComboBoxItem Tag="Ocean">海蓝</ComboBoxItem>
+                        <ComboBoxItem Tag="Forest">森林</ComboBoxItem>
+                        <ComboBoxItem Tag="Violet">紫夜</ComboBoxItem>
+                        <ComboBoxItem Tag="Colorful">多彩</ComboBoxItem>
+                    </ComboBox>
                 </StackPanel>
             </Grid>
         </Border>

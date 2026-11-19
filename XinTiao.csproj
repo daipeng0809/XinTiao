@@ -7,9 +7,9 @@
         <AssemblyName>信息调试助手</AssemblyName>
         <ApplicationIcon>wk-256x256.ico</ApplicationIcon>
         <Product>信息调试助手</Product>
-        <AssemblyVersion>1.2.0</AssemblyVersion>
-        <FileVersion>1.2.0</FileVersion>
-        <Version>1.2.0</Version>
+        <AssemblyVersion>1.3.0</AssemblyVersion>
+        <FileVersion>1.3.0</FileVersion>
+        <Version>1.3.0</Version>
 
         <!-- ===== [新增] AOT / 跨平台发布相关配置 ===== -->
         <!-- 绑定必须在编译期生成，NativeAOT 下反射绑定不可用 -->

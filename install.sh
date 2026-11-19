@@ -65,6 +65,16 @@ if [ ! -x "$APP_EXE" ]; then
         || echo "警告：$APP_EXE 没有执行权限，请手动执行 chmod +x \"$APP_EXE\"" >&2
 fi
 
+# ---------- 2.1 创建数据目录并授权（接收数据保存位置） ----------
+DATA_DIR="$APP_DIR/Data"
+if mkdir -p "$DATA_DIR" 2>/dev/null; then
+    # 授予写入权限，保证程序运行用户（含普通用户）能把接收数据写入 Data
+    chmod 777 "$DATA_DIR" 2>/dev/null || true
+    echo "已创建数据目录：$DATA_DIR"
+else
+    echo "警告：无法创建 $DATA_DIR，程序将把数据保存到用户目录。" >&2
+fi
+
 # ---------- 3. 定位图标（优先 png，桌面环境兼容性最好） ----------
 ICON_PATH=""
 for candidate in \

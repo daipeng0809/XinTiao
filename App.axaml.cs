@@ -3,6 +3,7 @@ using System.IO;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Styling;
 using XinTiao.Models;
 using XinTiao.ViewModels;
 using XinTiao.Views;
@@ -11,6 +12,13 @@ namespace XinTiao;
 
 public partial class App : Application
 {
+    // ===== [新增 V1.3.0] 自定义配色变体 =====
+    // XAML 中 ResourceDictionary 的键需要用 x:Static 引用这些静态实例（不支持字符串写法）
+    public static readonly ThemeVariant ThemeOcean = new("Ocean", ThemeVariant.Light);
+    public static readonly ThemeVariant ThemeForest = new("Forest", ThemeVariant.Light);
+    public static readonly ThemeVariant ThemeViolet = new("Violet", ThemeVariant.Dark);
+    public static readonly ThemeVariant ThemeColorful = new("Colorful", ThemeVariant.Light);
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);

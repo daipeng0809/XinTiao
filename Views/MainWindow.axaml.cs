@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.IO.Ports;
 using System.Net;
 using Avalonia;
@@ -56,6 +57,12 @@ public partial class MainWindow : UrsaWindow
 
     private bool _displayText = true;//显示文本
     private bool _displayTime = true;//显示时间
+    private bool _showSend;//显示自己发送的内容
+    private bool _saveData = true;//接收区显示的内容是否保存到 Data 文件夹
+
+    // ===== [新增 V1.2.0] 数据文件写入器：按日期时间命名，程序目录不可写时回退用户目录 =====
+    private readonly object _logLock = new();
+    private StreamWriter? _logWriter;
     private bool _sendText = true;//文本发送
     private bool _appendNewLine;//发送时末尾追加回车换行
     private bool _closing;//正在关闭连接（关闭动作已放后台线程执行）
@@ -104,8 +111,15 @@ public partial class MainWindow : UrsaWindow
             SaveConfig();
         };
 
-        //先设置按钮状态
-        ZhuTi.IsChecked = App.AppConfig.ThemeVariant == "Light" ? true : false;
+        // ===== [修改 V1.3.0] 左上角显示版本号（从程序集版本读取，与 csproj 保持一致） =====
+        App.AppConfig.AppVersion = GetAppVersion();
+        BanBenHao.Text = App.AppConfig.AppVersion;
+
+        // ===== [修改 V1.3.0] 载入配色方案（下拉框选择） =====
+        string peiSe = ResolveThemeId(App.AppConfig.ThemeVariant);
+        PeiSe.SelectedItem = PeiSe.Items
+            .OfType<ComboBoxItem>()
+            .FirstOrDefault(i => i.Tag?.ToString() == peiSe);
         
         chuanKou.SelectedValue = App.AppConfig.ComPort;
         
@@ -145,6 +159,8 @@ public partial class MainWindow : UrsaWindow
         // ===== [新增] 载入 显示 / 发送 / 定时发送 参数 =====
         XianShiWenBen.IsChecked = App.AppConfig.DisplayAsText;
         XianShiShiJian.IsChecked = App.AppConfig.DisplayTime;
+        XianShiFaSong.IsChecked = App.AppConfig.DisplaySend;
+        BaoCunShuJu.IsChecked = App.AppConfig.SaveReceivedData;
         WenBenFaSong.IsChecked = App.AppConfig.SendAsText;
         DingShiJianGe.Value = App.AppConfig.SendInterval;
 
@@ -174,12 +190,8 @@ public partial class MainWindow : UrsaWindow
         UpdateStatus();
         //-----------------------------------------
         
-        Application.Current!.RequestedThemeVariant = App.AppConfig.ThemeVariant switch
-        {
-            "Light" => ThemeVariant.Light,
-            "Dark"  => ThemeVariant.Dark,
-            _ => ThemeVariant.Default,
-        };
+        // ===== [修改 V1.3.0] 应用配色方案：浅色 / 深色 / 海蓝 / 森林 / 紫夜 / 多彩 =====
+        Application.Current!.RequestedThemeVariant = ResolveThemeVariant(peiSe);
 
         // _appConfig = HelpJson.Read(_luAppConfig, AppJsonContext.Default.AppConfig);
         // if (_appConfig == null)
@@ -198,24 +210,43 @@ public partial class MainWindow : UrsaWindow
             MessageBox.ShowAsync(arg1 + "：" + arg2.Message, arg1, MessageBoxIcon.Error, MessageBoxButton.OK));
     }
 
-    private void ToggleButton_OnIsCheckedChanged(object? sender, RoutedEventArgs e)
+    /// <summary>[新增 V1.3.0] 读取程序集版本，格式形如 V1.3.0</summary>
+    private static string GetAppVersion()
     {
-        if (sender is ToggleButton toggleButton)
-        {
-            if (_startupOk)
-            {
-                if (toggleButton.IsChecked == true)
-                {
-                    Application.Current?.RequestedThemeVariant = ThemeVariant.Light;
-                }else 
-                {
-                    Application.Current?.RequestedThemeVariant = ThemeVariant.Dark;
-                }
+        Version? ver = typeof(App).Assembly.GetName().Version;
+        return ver != null ? "V" + ver.ToString(3) : "V1.3.0";
+    }
 
-                App.AppConfig.ThemeVariant = Application.Current?.RequestedThemeVariant?.ToString() ?? "Default";
-                SaveConfig();
-            }
-        }
+    /// <summary>[新增 V1.3.0] 把配置里的字符串归一成合法配色 ID（旧值 Default 等回退到浅色）</summary>
+    private static string ResolveThemeId(string? id) => id switch
+    {
+        "Dark" or "Ocean" or "Forest" or "Violet" or "Colorful" => id,
+        _ => "Light",
+    };
+
+    /// <summary>[新增 V1.3.0] 配色 ID → ThemeVariant（使用 App 中定义的静态实例，与资源字典键一致）</summary>
+    private static ThemeVariant ResolveThemeVariant(string id) => id switch
+    {
+        "Dark" => ThemeVariant.Dark,
+        "Ocean" => App.ThemeOcean,
+        "Forest" => App.ThemeForest,
+        "Violet" => App.ThemeViolet,
+        "Colorful" => App.ThemeColorful,
+        _ => ThemeVariant.Light,
+    };
+
+    /// <summary>[新增 V1.3.0] 配色方案切换（下拉框）</summary>
+    private void PeiSe_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (!_startupOk) return;
+        if (PeiSe.SelectedItem is not ComboBoxItem item) return;
+
+        string id = ResolveThemeId(item.Tag?.ToString());
+        if (App.AppConfig.ThemeVariant == id) return;
+
+        App.AppConfig.ThemeVariant = id;
+        Application.Current!.RequestedThemeVariant = ResolveThemeVariant(id);
+        SaveConfig();
     }
 
     
@@ -445,13 +476,16 @@ public partial class MainWindow : UrsaWindow
             : BitConverter.ToString(bbb).Replace("-", " ");
 
         string line = _displayTime
-            ? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + "=> " + text + Environment.NewLine
+            ? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " => " + text + Environment.NewLine
             : "=> " + text + Environment.NewLine;
 
         Dispatcher.UIThread.Post(() =>
         {
             _model.DisplayCounter = newCount;
+
+            // ===== [修改 V1.2.0] 接收内容始终显示；开启“保存数据”时同步写入 Data 文件夹 =====
             _model.DisplayText += line;
+            AppendLogLine(line);
         });
     }
 
@@ -809,6 +843,32 @@ public partial class MainWindow : UrsaWindow
         }
     }
 
+    /// <summary>[新增 V1.2.0] 是否在接收区显示自己发送的内容</summary>
+    private void ToggleButton_OnIsCheckedChanged4(object? sender, RoutedEventArgs e)
+    {
+        if (sender is ToggleButton toggleButton)
+        {
+            _showSend = toggleButton.IsChecked ?? false;
+
+            if (!_startupOk) return;
+            App.AppConfig.DisplaySend = _showSend;
+            SaveConfig();
+        }
+    }
+
+    /// <summary>[新增 V1.2.0] 接收区显示的内容是否保存到 Data 文件夹（关闭后只显示不保存）</summary>
+    private void ToggleButton_OnIsCheckedChanged5(object? sender, RoutedEventArgs e)
+    {
+        if (sender is ToggleButton toggleButton)
+        {
+            _saveData = toggleButton.IsChecked ?? false;
+
+            if (!_startupOk) return;
+            App.AppConfig.SaveReceivedData = _saveData;
+            SaveConfig();
+        }
+    }
+
     private void Button_OnClick2(object? sender, RoutedEventArgs e)
     {
         // ===== [修改] 发送：串口 / TCP / UDP 统一入口 =====
@@ -838,7 +898,7 @@ public partial class MainWindow : UrsaWindow
         if (!BuildSendBytes(_model.SendText, !_sendText, showHint, out byte[] bytes))
             return false;
 
-        return SendBytes(bytes, showHint);
+        return SendBytes(bytes, showHint, _model.SendText, !_sendText);
     }
 
     /// <summary>
@@ -881,7 +941,9 @@ public partial class MainWindow : UrsaWindow
     /// <summary>
     /// [新增 V1.1.0] 实际发送 + 发送计数（单条 / 多行 / 定时发送共用）
     /// </summary>
-    private bool SendBytes(byte[] bytes, bool showHint)
+    /// <param name="sendText">原始发送内容（开启“显示发送”时用于回显）</param>
+    /// <param name="isHex">是否 HEX 发送（HEX 时回显按实际字节格式化）</param>
+    private bool SendBytes(byte[] bytes, bool showHint, string sendText, bool isHex)
     {
         if (bytes.Length == 0) return false;
 
@@ -907,7 +969,76 @@ public partial class MainWindow : UrsaWindow
 
         long temp = (long)_model.SendCounter + bytes.Length;
         _model.SendCounter = temp > int.MaxValue ? 0 : (int)temp;
+
+        // ===== [新增 V1.2.0] 按开关把自己发送的内容回显到接收区 =====
+        if (_showSend)
+        {
+            string text = isHex
+                ? BitConverter.ToString(bytes).Replace("-", " ")
+                : sendText;
+            string line = _displayTime
+                ? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " 发送=> " + text + Environment.NewLine
+                : "发送=> " + text + Environment.NewLine;
+
+            _model.DisplayText += line;
+            AppendLogLine(line);
+        }
+
         return true;
+    }
+
+    /// <summary>
+    /// [新增 V1.2.0] 把接收区显示的一行内容追加写入 Data 文件夹：
+    /// 文件名为日期时间（yyyy-MM-dd_HH-mm-ss.txt），目录不存在时自动创建；
+    /// 程序目录不可写（如 Linux 安装目录只读）时回退到用户目录。
+    /// </summary>
+    private void AppendLogLine(string line)
+    {
+        if (!_saveData) return;
+
+        lock (_logLock)
+        {
+            try
+            {
+                _logWriter ??= CreateLogWriter();
+                _logWriter?.Write(line);
+            }
+            catch
+            {
+                // 磁盘满 / 文件被占用等写入失败不影响接收显示
+            }
+        }
+    }
+
+    /// <summary>
+    /// [新增 V1.2.0] 创建数据文件：优先程序目录 Data，失败回退用户目录 Data
+    /// </summary>
+    private static StreamWriter? CreateLogWriter()
+    {
+        string fileName = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss") + ".txt";
+
+        foreach (string folder in GetLogFolders())
+        {
+            try
+            {
+                Directory.CreateDirectory(folder);
+                return new StreamWriter(Path.Combine(folder, fileName), append: true, new UTF8Encoding(false))
+                {
+                    AutoFlush = true,
+                };
+            }
+            catch { }
+        }
+
+        return null;
+    }
+
+    /// <summary>[新增 V1.2.0] 数据目录候选：程序目录 Data → 用户配置目录 Data</summary>
+    private static IEnumerable<string> GetLogFolders()
+    {
+        yield return Path.Combine(AppContext.BaseDirectory, "Data");
+        yield return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "XinTiao", "Data");
     }
 
     /// <summary>
@@ -1003,7 +1134,7 @@ public partial class MainWindow : UrsaWindow
             return;
         }
 
-        SendBytes(bytes, false);
+        SendBytes(bytes, false, _model.SendText, !_sendText);
     }
 
     // ===================== [新增 V1.1.0] 多行发送 =====================
@@ -1130,7 +1261,7 @@ public partial class MainWindow : UrsaWindow
         if (!BuildSendBytes(row.Text, row.IsHex, showHint, out byte[] bytes))
             return false;
 
-        return SendBytes(bytes, showHint);
+        return SendBytes(bytes, showHint, row.Text, row.IsHex);
     }
 
     /// <summary>多行发送：某一行的定时发送 开始 / 停止</summary>
@@ -1438,6 +1569,13 @@ public partial class MainWindow : UrsaWindow
             SyncInputsToConfig();
             SaveConfig();
 
+            // ===== [新增 V1.2.0] 关闭数据文件，确保内容已落盘 =====
+            lock (_logLock)
+            {
+                try { _logWriter?.Dispose(); } catch { }
+                _logWriter = null;
+            }
+
             _isRunning = false;
             // 让释放期间的后台回调（如服务端 ClientsChanged）在守卫处直接短路
             _leiXing = LianJieLeiXing.Wu;
@@ -1479,7 +1617,7 @@ public partial class MainWindow : UrsaWindow
 
         _jy = new JiaoYan();
         _jy.Closed += (_, _) => _jy = null;
-        _jy.Show(this);
+        _jy.Show();
     }
 }
 

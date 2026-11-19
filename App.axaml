@@ -1,9 +1,170 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:semi="https://irihi.tech/semi"
+             xmlns:app="using:XinTiao"
              x:Class="XinTiao.App"
              RequestedThemeVariant="Light">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+
+    <!-- ===== [新增 V1.3.0] 多配色方案 =====
+         Light / Dark 保持 Semi 默认色调，只定义强调色；
+         Ocean / Forest / Violet / Colorful 在继承 Light 或 Dark 的基础上覆盖强调色与按钮色，
+         ThemeVariant 在 MainWindow 中按下拉框选择动态切换。 -->
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+
+                <!-- ===== 浅色（默认） ===== -->
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="AppAccent" Color="#2E7BE6" />
+                    <SolidColorBrush x:Key="AppWindowBackground" Color="#FFFFFF" />
+                </ResourceDictionary>
+
+                <!-- ===== 深色（默认） ===== -->
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="AppAccent" Color="#2E7BE6" />
+                    <SolidColorBrush x:Key="AppWindowBackground" Color="#1F1F1F" />
+                </ResourceDictionary>
+
+                <!-- ===== 海蓝（浅色系：深蓝主调 + 青绿按钮） ===== -->
+                <ResourceDictionary x:Key="{x:Static app:App.ThemeOcean}">
+                    <SolidColorBrush x:Key="AppAccent" Color="#1567D3" />
+                    <SolidColorBrush x:Key="AppWindowBackground" Color="#EFF5FF" />
+                    <!-- Primary 按钮 -->
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryBackground" Color="#1567D3" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryBorderBrush" Color="#1567D3" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryPointeroverBackground" Color="#3A82E6" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryPointeroverBorderBrush" Color="#3A82E6" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedBackground" Color="#0E52B0" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedBorderBrush" Color="#0E52B0" />
+                    <SolidColorBrush x:Key="ButtonOutlinePrimaryBorderBrush" Color="#1567D3" />
+                    <SolidColorBrush x:Key="ButtonDefaultPrimaryForeground" Color="#1567D3" />
+                    <!-- Success 按钮（打开 / 发送） -->
+                    <SolidColorBrush x:Key="ButtonSolidSuccessBackground" Color="#0FA3A3" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessBorderBrush" Color="#0FA3A3" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessPointeroverBackground" Color="#2BB8B8" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessPointeroverBorderBrush" Color="#2BB8B8" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessPressedBackground" Color="#0B8585" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessPressedBorderBrush" Color="#0B8585" />
+                    <SolidColorBrush x:Key="ButtonOutlineSuccessBorderBrush" Color="#0FA3A3" />
+                    <SolidColorBrush x:Key="ButtonDefaultSuccessForeground" Color="#0FA3A3" />
+                    <!-- Warning 按钮（关闭 / 断开） -->
+                    <SolidColorBrush x:Key="ButtonSolidWarningBackground" Color="#C77A05" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningBorderBrush" Color="#C77A05" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningPointeroverBackground" Color="#DB8F1A" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningPointeroverBorderBrush" Color="#DB8F1A" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningPressedBackground" Color="#A96500" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningPressedBorderBrush" Color="#A96500" />
+                    <SolidColorBrush x:Key="ButtonOutlineWarningBorderBrush" Color="#C77A05" />
+                    <SolidColorBrush x:Key="ButtonDefaultWarningForeground" Color="#C77A05" />
+                    <!-- 开关 -->
+                    <SolidColorBrush x:Key="ToggleSwitchContainerCheckedForeground" Color="#1567D3" />
+                    <SolidColorBrush x:Key="ToggleSwitchContainerCheckedPointeroverBackground" Color="#3A82E6" />
+                    <SolidColorBrush x:Key="ToggleSwitchContainerCheckedPressedBackground" Color="#0E52B0" />
+                </ResourceDictionary>
+
+                <!-- ===== 森林（浅色系：绿色主调） ===== -->
+                <ResourceDictionary x:Key="{x:Static app:App.ThemeForest}">
+                    <SolidColorBrush x:Key="AppAccent" Color="#2F8F46" />
+                    <SolidColorBrush x:Key="AppWindowBackground" Color="#F0F8F0" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryBackground" Color="#2F8F46" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryBorderBrush" Color="#2F8F46" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryPointeroverBackground" Color="#46A75C" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryPointeroverBorderBrush" Color="#46A75C" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedBackground" Color="#237437" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedBorderBrush" Color="#237437" />
+                    <SolidColorBrush x:Key="ButtonOutlinePrimaryBorderBrush" Color="#2F8F46" />
+                    <SolidColorBrush x:Key="ButtonDefaultPrimaryForeground" Color="#2F8F46" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessBackground" Color="#2E9E5B" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessBorderBrush" Color="#2E9E5B" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessPointeroverBackground" Color="#43B36F" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessPointeroverBorderBrush" Color="#43B36F" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessPressedBackground" Color="#228147" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessPressedBorderBrush" Color="#228147" />
+                    <SolidColorBrush x:Key="ButtonOutlineSuccessBorderBrush" Color="#2E9E5B" />
+                    <SolidColorBrush x:Key="ButtonDefaultSuccessForeground" Color="#2E9E5B" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningBackground" Color="#B8860B" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningBorderBrush" Color="#B8860B" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningPointeroverBackground" Color="#CD9A1F" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningPointeroverBorderBrush" Color="#CD9A1F" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningPressedBackground" Color="#9A7009" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningPressedBorderBrush" Color="#9A7009" />
+                    <SolidColorBrush x:Key="ButtonOutlineWarningBorderBrush" Color="#B8860B" />
+                    <SolidColorBrush x:Key="ButtonDefaultWarningForeground" Color="#B8860B" />
+                    <SolidColorBrush x:Key="ToggleSwitchContainerCheckedForeground" Color="#2F8F46" />
+                    <SolidColorBrush x:Key="ToggleSwitchContainerCheckedPointeroverBackground" Color="#46A75C" />
+                    <SolidColorBrush x:Key="ToggleSwitchContainerCheckedPressedBackground" Color="#237437" />
+                </ResourceDictionary>
+
+                <!-- ===== 紫夜（深色系：紫色主调 + 青绿按钮） ===== -->
+                <ResourceDictionary x:Key="{x:Static app:App.ThemeViolet}">
+                    <SolidColorBrush x:Key="AppAccent" Color="#A66BFF" />
+                    <SolidColorBrush x:Key="AppWindowBackground" Color="#191229" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryBackground" Color="#A66BFF" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryBorderBrush" Color="#A66BFF" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryPointeroverBackground" Color="#B98AFF" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryPointeroverBorderBrush" Color="#B98AFF" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedBackground" Color="#8F4FE8" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedBorderBrush" Color="#8F4FE8" />
+                    <SolidColorBrush x:Key="ButtonOutlinePrimaryBorderBrush" Color="#A66BFF" />
+                    <SolidColorBrush x:Key="ButtonDefaultPrimaryForeground" Color="#B98AFF" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessBackground" Color="#00BFA5" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessBorderBrush" Color="#00BFA5" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessPointeroverBackground" Color="#1ED4BC" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessPointeroverBorderBrush" Color="#1ED4BC" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessPressedBackground" Color="#00A38D" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessPressedBorderBrush" Color="#00A38D" />
+                    <SolidColorBrush x:Key="ButtonOutlineSuccessBorderBrush" Color="#00BFA5" />
+                    <SolidColorBrush x:Key="ButtonDefaultSuccessForeground" Color="#1ED4BC" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningBackground" Color="#FFAD33" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningBorderBrush" Color="#FFAD33" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningPointeroverBackground" Color="#FFC163" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningPointeroverBorderBrush" Color="#FFC163" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningPressedBackground" Color="#E89417" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningPressedBorderBrush" Color="#E89417" />
+                    <SolidColorBrush x:Key="ButtonOutlineWarningBorderBrush" Color="#FFAD33" />
+                    <SolidColorBrush x:Key="ButtonDefaultWarningForeground" Color="#FFC163" />
+                    <SolidColorBrush x:Key="ToggleSwitchContainerCheckedForeground" Color="#A66BFF" />
+                    <SolidColorBrush x:Key="ToggleSwitchContainerCheckedPointeroverBackground" Color="#B98AFF" />
+                    <SolidColorBrush x:Key="ToggleSwitchContainerCheckedPressedBackground" Color="#8F4FE8" />
+                </ResourceDictionary>
+
+                <!-- ===== 多彩（浅色系：玫红强调 + 紫 / 翠绿 / 金橙按钮） ===== -->
+                <ResourceDictionary x:Key="{x:Static app:App.ThemeColorful}">
+                    <SolidColorBrush x:Key="AppAccent" Color="#E0457B" />
+                    <SolidColorBrush x:Key="AppWindowBackground" Color="#FFF4F9" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryBackground" Color="#7C4DFF" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryBorderBrush" Color="#7C4DFF" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryPointeroverBackground" Color="#936DFF" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryPointeroverBorderBrush" Color="#936DFF" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedBackground" Color="#6633E6" />
+                    <SolidColorBrush x:Key="ButtonSolidPrimaryPressedBorderBrush" Color="#6633E6" />
+                    <SolidColorBrush x:Key="ButtonOutlinePrimaryBorderBrush" Color="#7C4DFF" />
+                    <SolidColorBrush x:Key="ButtonDefaultPrimaryForeground" Color="#7C4DFF" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessBackground" Color="#00B386" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessBorderBrush" Color="#00B386" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessPointeroverBackground" Color="#17C79A" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessPointeroverBorderBrush" Color="#17C79A" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessPressedBackground" Color="#009972" />
+                    <SolidColorBrush x:Key="ButtonSolidSuccessPressedBorderBrush" Color="#009972" />
+                    <SolidColorBrush x:Key="ButtonOutlineSuccessBorderBrush" Color="#00B386" />
+                    <SolidColorBrush x:Key="ButtonDefaultSuccessForeground" Color="#00B386" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningBackground" Color="#F5A623" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningBorderBrush" Color="#F5A623" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningPointeroverBackground" Color="#FFB84D" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningPointeroverBorderBrush" Color="#FFB84D" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningPressedBackground" Color="#D98E10" />
+                    <SolidColorBrush x:Key="ButtonSolidWarningPressedBorderBrush" Color="#D98E10" />
+                    <SolidColorBrush x:Key="ButtonOutlineWarningBorderBrush" Color="#F5A623" />
+                    <SolidColorBrush x:Key="ButtonDefaultWarningForeground" Color="#D98E10" />
+                    <SolidColorBrush x:Key="ToggleSwitchContainerCheckedForeground" Color="#E0457B" />
+                    <SolidColorBrush x:Key="ToggleSwitchContainerCheckedPointeroverBackground" Color="#EE6693" />
+                    <SolidColorBrush x:Key="ToggleSwitchContainerCheckedPressedBackground" Color="#C73166" />
+                </ResourceDictionary>
+
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
 
     <Application.Styles>
         <FluentTheme />
