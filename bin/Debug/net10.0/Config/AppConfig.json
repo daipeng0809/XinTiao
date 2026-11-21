@@ -1,7 +1,7 @@
 {
   "AppName": "\u4FE1\u606F\u8C03\u8BD5\u52A9\u624B",
-  "AppVersion": "V1.3.0",
-  "ThemeVariant": "Dark",
+  "AppVersion": "V1.6.0",
+  "ThemeVariant": "Colorful",
   "TabItemIndex": 0,
   "ComPort": "COM10",
   "BaudRate": "9600",
@@ -42,5 +42,12 @@
       "IsHex": false,
       "Interval": 1000
     }
-  ]
+  ],
+  "FileSendAsHexText": false,
+  "FileSendChunkSize": 1024,
+  "FileSendInterval": 20,
+  "FileSendAppendCrLf": false,
+  "FileSendUseProtocol": false,
+  "FileSendAckTimeout": 1000,
+  "FileSendRetryCount": 3
 }

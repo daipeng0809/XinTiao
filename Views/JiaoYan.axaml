@@ -9,6 +9,7 @@
               Icon="/Assets/wk-256x256.ico"
               WindowStartupLocation="CenterOwner"
               FontFamily="{DynamicResource AppFontFamily}"
+              Background="{DynamicResource AppWindowBackground}"
               Opened="JiaoYan_OnOpened"
               Title="数据校验">
 
@@ -46,7 +47,7 @@
         <Border Grid.Row="0" Padding="14,0" BorderThickness="0,0,0,1" BorderBrush="#22808080">
             <Grid ColumnDefinitions="Auto,*,100">
                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Border Width="4" Height="18" CornerRadius="2" Background="#2E7BE6" />
+                    <Border Width="4" Height="18" CornerRadius="2" Background="{DynamicResource AppAccent}" />
                     <TextBlock Text="数据校验" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
                 </StackPanel>
             </Grid>
@@ -91,16 +92,16 @@
                         <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,6,0,0">
                             <TextBlock Name="ShuRuXinXi" Text="共 0 字节" FontSize="12" Opacity="0.6"
                                        VerticalAlignment="Center" TextWrapping="Wrap" />
-                            <!-- ===== [新增 V1.6.0] 把输入内容与 HEX / 字符模式送到主窗口发送框 ===== -->
-                            <Button Grid.Column="1" Content="发送到主窗口" Classes="rowAct" Margin="8,0,0,0"
-                                    Theme="{StaticResource OutlineButton}"
-                                    ToolTip.Tip="把当前输入内容与 HEX / 字符模式填入主窗口发送框"
-                                    Click="FaSongDaoZhu_OnClick" />
                             <!-- ===== [新增 V1.4.0] 导入主窗口发送区的内容与文本 / HEX 状态 ===== -->
                             <Button Grid.Column="2" Content="导入" Classes="rowAct" Margin="8,0,0,0"
-                                    Theme="{StaticResource OutlineButton}"
+                                    Theme="{StaticResource SolidButton}"
                                     ToolTip.Tip="把主窗口“单条数据”发送框中的内容与当前文本 / HEX 状态导入到这里"
                                     Click="DaoRu_OnClick" />
+                            <!-- ===== [新增 V1.6.0] 把输入内容与 HEX / 字符模式送到主窗口发送框 ===== -->
+                            <Button Grid.Column="1" Content="发送到主窗口" Classes="rowAct" Margin="8,0,0,0"
+                                    Theme="{StaticResource SolidButton}"
+                                    ToolTip.Tip="把当前输入内容与 HEX / 字符模式填入主窗口发送框"
+                                    Click="FaSongDaoZhu_OnClick" />
                             <Button Grid.Column="3" Content="清空" Classes="rowAct" Margin="8,0,0,0"
                                     Theme="{StaticResource OutlineButton}" Click="QingKong_OnClick" />
                         </Grid>
