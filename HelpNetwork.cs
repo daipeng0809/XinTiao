@@ -494,22 +494,35 @@ public class HelpUdp : IDisposable
 }
 
 /// <summary>
-/// TCP 服务端帮助类 - 监听本地端口，允许接入多个客户端，接收数据汇总到同一缓冲区，
-/// 发送时广播给所有已连接客户端（与 HelpTcp / HelpUdp 保持相同的使用方式）
+/// TCP 服务端帮助类 - 监听本地端口，允许接入多个客户端，
+/// 默认接收数据汇总到同一缓冲区、发送时广播给所有客户端；
+/// 也支持按客户端取数据与按客户端单播（文件协议传输选择目标客户端时使用）。
 /// </summary>
 public class HelpTcpServer : IDisposable
 {
+    /// <summary>单个客户端：连接对象 + 独立接收缓冲（便于按客户端取 ACK）</summary>
+    private sealed class KeHuDuan
+    {
+        public required TcpClient Client { get; init; }
+        public ConcurrentQueue<byte> HuanChong { get; } = new();
+        public Thread? DuQuXianCheng { get; set; }
+    }
+
     private TcpListener? _listener;
     private Thread? _acceptThread;
     private volatile bool _isRunning;
     private readonly Lock _lockObj = new();
     private int _clientSeq;
 
-    // 接收数据缓冲区（所有客户端共用，线程安全）
+    // 残留接收数据：历史遗留数据，统一由 TakeAllBytes 取出
     private readonly ConcurrentQueue<byte> _receiveBuffer = new();
 
+    // 已断开客户端尚未被取走的字节（按“IP:端口”保留）：
+    // 目标客户端回完最后一个 ACK 就断开时，仍能被 TakeAllBytes(key) 取到，避免误判传输失败
+    private readonly ConcurrentDictionary<string, ConcurrentQueue<byte>> _canLiu = new(StringComparer.Ordinal);
+
     // 已连接客户端：key 为“IP:端口”
-    private readonly ConcurrentDictionary<string, TcpClient> _clients = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, KeHuDuan> _clients = new(StringComparer.Ordinal);
 
     /// <summary>发生错误时触发</summary>
     public event Action<string, Exception>? ErrorOccurred;
@@ -522,6 +535,20 @@ public class HelpTcpServer : IDisposable
 
     /// <summary>当前已连接客户端数量</summary>
     public int ClientCount => _clients.Count;
+
+    /// <summary>当前已连接客户端端点列表（按字符串排序，可直接用于下拉框）</summary>
+    public System.Collections.Generic.IReadOnlyList<string> ClientList
+    {
+        get
+        {
+            var lieBiao = new System.Collections.Generic.List<string>(_clients.Keys);
+            lieBiao.Sort(StringComparer.Ordinal);
+            return lieBiao;
+        }
+    }
+
+    /// <summary>指定客户端是否仍在线</summary>
+    public bool HasClient(string keHu) => !string.IsNullOrEmpty(keHu) && _clients.ContainsKey(keHu);
 
     /// <summary>已连接客户端端点列表（如 192.168.1.20:50234, 192.168.1.21:50235）</summary>
     public string ClientEndPoints => _clients.IsEmpty ? string.Empty : string.Join(", ", _clients.Keys);
@@ -561,6 +588,9 @@ public class HelpTcpServer : IDisposable
                 _listener = new TcpListener(localAddr, localPort);
                 _listener.Start();
 
+                // 新一轮监听：清掉上一轮遗留的接收/残留数据
+                ClearBuffer();
+
                 _isRunning = true;
                 _acceptThread = new Thread(AcceptLoop)
                 {
@@ -593,7 +623,7 @@ public class HelpTcpServer : IDisposable
             {
                 try
                 {
-                    pair.Value.GetStream().Write(data, 0, data.Length);
+                    pair.Value.Client.GetStream().Write(data, 0, data.Length);
                     any = true;
                 }
                 catch
@@ -609,6 +639,30 @@ public class HelpTcpServer : IDisposable
         return any;
     }
 
+    /// <summary>
+    /// [新增 V1.6.0] 只发送给指定客户端（key 为 ClientList 中的“IP:端口”）
+    /// </summary>
+    public bool SendTo(string keHu, byte[] data)
+    {
+        if (_listener == null || data == null || data.Length == 0 || string.IsNullOrEmpty(keHu)) return false;
+        if (!_clients.TryGetValue(keHu, out var duiXiang)) return false;
+
+        try
+        {
+            lock (_lockObj)
+            {
+                duiXiang.Client.GetStream().Write(data, 0, data.Length);
+            }
+            return true;
+        }
+        catch
+        {
+            // 写失败按断开处理，避免继续向失效连接发送
+            RemoveClient(keHu);
+            return false;
+        }
+    }
+
     /// <summary>发送字符串</summary>
     public bool Send(string text, Encoding? encoding = null)
     {
@@ -616,19 +670,93 @@ public class HelpTcpServer : IDisposable
         return Send(encoding.GetBytes(text));
     }
 
-    /// <summary>从缓冲区取走所有已接收的字节（消费式读取）</summary>
+    /// <summary>从缓冲区取走所有已接收的字节（所有客户端 + 已断开残留，消费式读取）</summary>
     public byte[] TakeAllBytes()
     {
         var list = new System.Collections.Generic.List<byte>();
         while (_receiveBuffer.TryDequeue(out byte b))
             list.Add(b);
+
+        foreach (var pair in _clients)
+        {
+            while (pair.Value.HuanChong.TryDequeue(out byte b))
+                list.Add(b);
+        }
+
+        foreach (string key in _canLiu.Keys)
+        {
+            if (!_canLiu.TryRemove(key, out var canLiu)) continue;
+            while (canLiu.TryDequeue(out byte b))
+                list.Add(b);
+        }
+
         return [.. list];
     }
 
-    /// <summary>清空接收缓冲区</summary>
+    /// <summary>
+    /// [新增 V1.6.0] 只取指定客户端已接收的字节（含该客户端断开后尚未取走的残留）；
+    /// 客户端不存在时返回空数组
+    /// </summary>
+    public byte[] TakeAllBytes(string? keHu)
+    {
+        if (string.IsNullOrEmpty(keHu)) return TakeAllBytes();
+
+        var list = new System.Collections.Generic.List<byte>();
+
+        if (_clients.TryGetValue(keHu, out var duiXiang))
+        {
+            while (duiXiang.HuanChong.TryDequeue(out byte b))
+                list.Add(b);
+        }
+
+        // 客户端已断开：取走按 key 保留的残留字节（如最后一个 ACK）
+        if (_canLiu.TryRemove(keHu, out var canLiu))
+        {
+            while (canLiu.TryDequeue(out byte b))
+                list.Add(b);
+        }
+
+        return [.. list];
+    }
+
+    /// <summary>
+    /// [新增 V1.6.0] 取走除指定客户端外所有已接收的字节（用于协议传输时其余客户端的数据照常显示）
+    /// </summary>
+    public byte[] TakeAllBytesExcept(string? keHu)
+    {
+        var list = new System.Collections.Generic.List<byte>();
+        while (_receiveBuffer.TryDequeue(out byte b))
+            list.Add(b);
+
+        foreach (var pair in _clients)
+        {
+            if (string.Equals(pair.Key, keHu, StringComparison.Ordinal)) continue;
+            while (pair.Value.HuanChong.TryDequeue(out byte b))
+                list.Add(b);
+        }
+
+        foreach (string key in _canLiu.Keys)
+        {
+            if (string.Equals(key, keHu, StringComparison.Ordinal)) continue;
+            if (!_canLiu.TryRemove(key, out var canLiu)) continue;
+            while (canLiu.TryDequeue(out byte b))
+                list.Add(b);
+        }
+
+        return [.. list];
+    }
+
+    /// <summary>清空接收缓冲区（含各客户端未取走的数据与已断开残留）</summary>
     public void ClearBuffer()
     {
         while (_receiveBuffer.TryDequeue(out _)) { }
+
+        foreach (var pair in _clients)
+        {
+            while (pair.Value.HuanChong.TryDequeue(out _)) { }
+        }
+
+        _canLiu.Clear();
     }
 
     /// <summary>停止监听并断开所有客户端</summary>
@@ -647,16 +775,36 @@ public class HelpTcpServer : IDisposable
             }
             catch { }
 
-            foreach (string key in _clients.Keys)
+            foreach (var pair in _clients)
             {
                 try
                 {
-                    _clients[key].Close();
+                    pair.Value.Client.Close();
+                }
+                catch { }
+            }
+
+            // 等读线程退出（读超时 500ms 内），其 finally 会按 key 迁移尚未取走的残留数据
+            foreach (var pair in _clients)
+            {
+                try
+                {
+                    Thread? duQuXianCheng = pair.Value.DuQuXianCheng;
+                    if (duQuXianCheng != null && duQuXianCheng.IsAlive && duQuXianCheng != Thread.CurrentThread)
+                        duQuXianCheng.Join(600);
                 }
                 catch { }
             }
 
             _clients.Clear();
+
+            // 服务端关闭：把按 key 保留的残留统一并入全局显示缓冲（下次 Open 会清空）
+            foreach (string key in _canLiu.Keys)
+            {
+                if (!_canLiu.TryRemove(key, out var canLiu)) continue;
+                while (canLiu.TryDequeue(out byte b))
+                    _receiveBuffer.Enqueue(b);
+            }
 
             try
             {
@@ -692,13 +840,15 @@ public class HelpTcpServer : IDisposable
                 string key = client.Client.RemoteEndPoint?.ToString()
                              ?? "client-" + Interlocked.Increment(ref _clientSeq);
 
-                _clients[key] = client;
+                var keHuDuan = new KeHuDuan { Client = client };
+                _clients[key] = keHuDuan;
 
-                var readThread = new Thread(() => ClientReadLoop(key, client))
+                var readThread = new Thread(() => ClientReadLoop(key, keHuDuan))
                 {
                     IsBackground = true,
                     Name = "TcpServerReadThread"
                 };
+                keHuDuan.DuQuXianCheng = readThread;
                 readThread.Start();
 
                 ClientsChanged?.Invoke();
@@ -723,13 +873,13 @@ public class HelpTcpServer : IDisposable
     }
 
     /// <summary>单个客户端的读取循环</summary>
-    private void ClientReadLoop(string key, TcpClient client)
+    private void ClientReadLoop(string key, KeHuDuan keHuDuan)
     {
         var tempBuf = new byte[8192];
 
         try
         {
-            var stream = client.GetStream();
+            var stream = keHuDuan.Client.GetStream();
             stream.ReadTimeout = 500; // 读超时用于及时响应关闭
 
             while (_isRunning)
@@ -740,7 +890,7 @@ public class HelpTcpServer : IDisposable
                     if (n <= 0) break; // 对端关闭
 
                     for (int i = 0; i < n; i++)
-                        _receiveBuffer.Enqueue(tempBuf[i]);
+                        keHuDuan.HuanChong.Enqueue(tempBuf[i]);
                 }
                 catch (IOException ex) when (ex.InnerException is SocketException se &&
                                              se.SocketErrorCode == SocketError.TimedOut)
@@ -772,13 +922,30 @@ public class HelpTcpServer : IDisposable
     /// <summary>移除并关闭一个客户端</summary>
     private void RemoveClient(string key)
     {
-        if (!_clients.TryRemove(key, out var client)) return;
+        if (!_clients.TryRemove(key, out var keHuDuan)) return;
 
         try
         {
-            client.Close();
+            keHuDuan.Client.Close();
         }
         catch { }
+
+        // 断开前未取走的数据按 key 保留：目标客户端回完最后一个 ACK 就断开时，
+        // 仍能被 TakeAllBytes(key) 取到，避免把成功传输误判为失败
+        var canLiu = new ConcurrentQueue<byte>();
+        while (keHuDuan.HuanChong.TryDequeue(out byte b))
+            canLiu.Enqueue(b);
+
+        if (!canLiu.IsEmpty)
+        {
+            if (_canLiu.TryRemove(key, out var jiu))
+            {
+                while (jiu.TryDequeue(out byte b))
+                    canLiu.Enqueue(b);
+            }
+
+            _canLiu[key] = canLiu;
+        }
 
         ClientsChanged?.Invoke();
     }

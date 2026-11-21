@@ -11,6 +11,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Ursa.Controls;
@@ -69,6 +70,10 @@ public partial class MainWindow : UrsaWindow
 
     private bool _startupOk = false;//启动完成
     private JiaoYan? _jy = null;//校验窗口
+    private FaSongWenJian? _wj = null;//[新增 V1.4.0] 发送文件窗口
+    private Modbus? _mb = null;//[新增 V1.6.0] Modbus 工具窗口
+    private GuanYu? _gy = null;//[新增 V1.6.0] 关于软件窗口
+    private readonly WenJianXieYiJieShou _xieYiJieShou = new();//[新增 V1.5.0] 协议传输 ACK 接收分流器
     
     private void Control_OnLoaded(object? sender, RoutedEventArgs e)
     {
@@ -214,7 +219,7 @@ public partial class MainWindow : UrsaWindow
     private static string GetAppVersion()
     {
         Version? ver = typeof(App).Assembly.GetName().Version;
-        return ver != null ? "V" + ver.ToString(3) : "V1.3.0";
+        return ver != null ? "V" + ver.ToString(3) : "V1.6.0";
     }
 
     /// <summary>[新增 V1.3.0] 把配置里的字符串归一成合法配色 ID（旧值 Default 等回退到浅色）</summary>
@@ -440,6 +445,26 @@ public partial class MainWindow : UrsaWindow
         {
             try
             {
+                // ===== [新增 V1.6.0] TCP 服务端 + 协议传输 + 已选目标客户端：
+                // 只把目标客户端的数据交给 ACK 解析，其他客户端的接收内容照常显示
+                if (_leiXing == LianJieLeiXing.TcpServer && _xieYiJieShou.QiYong)
+                {
+                    string? muBiao = _xieYiJieShou.MuBiao;
+                    if (!string.IsNullOrEmpty(muBiao))
+                    {
+                        byte[] laiZiMuBiao = _tcpServer.TakeAllBytes(muBiao);
+                        if (laiZiMuBiao.Length > 0)
+                            _xieYiJieShou.Add(laiZiMuBiao);
+
+                        byte[] laiZiQiTa = _tcpServer.TakeAllBytesExcept(muBiao);
+                        if (laiZiQiTa.Length > 0)
+                            ShowReceived(laiZiQiTa);
+
+                        Thread.Sleep(20);
+                        continue;
+                    }
+                }
+
                 byte[] bbb = _leiXing switch
                 {
                     LianJieLeiXing.ChuanKou => _port.TakeAllBytes(),
@@ -451,7 +476,11 @@ public partial class MainWindow : UrsaWindow
 
                 if (bbb.Length > 0)
                 {
-                    ShowReceived(bbb);
+                    // ===== [新增 V1.5.0] 协议传输期间：应答帧交给发送文件窗口，不在接收区显示 =====
+                    if (_xieYiJieShou.QiYong)
+                        _xieYiJieShou.Add(bbb);
+                    else
+                        ShowReceived(bbb);
                 }
             }
             catch (Exception ex)
@@ -657,6 +686,9 @@ public partial class MainWindow : UrsaWindow
 
         ZhuangTaiWenBen.Text = text;
         ZhuangTaiDian.Fill = new SolidColorBrush(Color.Parse(color));
+
+        // ===== [新增 V1.6.0] 连接方式变化时刷新发送文件窗口（目标客户端行/列表随连接方式实时生效）
+        _wj?.ShuaXinHuanJing();
     }
 
     /// <summary>
@@ -685,6 +717,7 @@ public partial class MainWindow : UrsaWindow
             if (_leiXing != LianJieLeiXing.TcpServer) return;
             ApplyTcpModeUi();
             UpdateStatus();
+            // 客户端增减时 UpdateStatus 内会刷新发送文件窗口的目标客户端列表
         });
     }
 
@@ -947,15 +980,7 @@ public partial class MainWindow : UrsaWindow
     {
         if (bytes.Length == 0) return false;
 
-        bool ok = _leiXing switch
-        {
-            LianJieLeiXing.ChuanKou => _port.Send(bytes),
-            LianJieLeiXing.Tcp => _tcp.Send(bytes),
-            LianJieLeiXing.TcpServer => _tcpServer.Send(bytes),
-            LianJieLeiXing.Udp => _udp.Send(bytes),
-            _ => false,
-        };
-
+        bool ok = WriteToChannel(bytes);
         if (!ok)
         {
             // ===== [新增] 服务端尚未有客户端接入时给出明确提示 =====
@@ -967,8 +992,7 @@ public partial class MainWindow : UrsaWindow
             return false;
         }
 
-        long temp = (long)_model.SendCounter + bytes.Length;
-        _model.SendCounter = temp > int.MaxValue ? 0 : (int)temp;
+        AddSendCounter(bytes.Length);
 
         // ===== [新增 V1.2.0] 按开关把自己发送的内容回显到接收区 =====
         if (_showSend)
@@ -985,6 +1009,153 @@ public partial class MainWindow : UrsaWindow
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// [新增 V1.4.0] 发送文件专用：只写入当前连接并计数，不解析内容、不回显（进度由发送文件窗口统一显示）
+    /// </summary>
+    private bool SendRawBytes(byte[] bytes)
+    {
+        if (bytes.Length == 0) return true;
+        if (!WriteToChannel(bytes)) return false;
+
+        AddSendCounter(bytes.Length);
+        return true;
+    }
+
+    /// <summary>[新增] 按当前连接方式（串口 / TCP 客户端 / TCP 服务端 / UDP）写入数据</summary>
+    private bool WriteToChannel(byte[] bytes) => _leiXing switch
+    {
+        LianJieLeiXing.ChuanKou => _port.Send(bytes),
+        LianJieLeiXing.Tcp => _tcp.Send(bytes),
+        LianJieLeiXing.TcpServer => _tcpServer.Send(bytes),
+        LianJieLeiXing.Udp => _udp.Send(bytes),
+        _ => false,
+    };
+
+    /// <summary>发送计数：超出 int 上限后归零，避免负数</summary>
+    private void AddSendCounter(int count)
+    {
+        long temp = (long)_model.SendCounter + count;
+        _model.SendCounter = temp > int.MaxValue ? 0 : (int)temp;
+    }
+
+    /// <summary>
+    /// [新增 V1.4.0] 发送文件：先选文件，再弹出“发送选项”窗口（分块大小 / 间隔 / 原始或 HEX 文本）
+    /// </summary>
+    private async void Button_SendFile_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (!IsChannelOpen())
+        {
+            MessageBox.ShowAsync("请先打开串口，或建立 TCP / UDP 连接后再发送文件。", "未连接",
+                MessageBoxIcon.Warning, MessageBoxButton.OK);
+            return;
+        }
+
+        // 服务端还没有客户端时直接提示，避免选完文件才发现发不出去
+        if (_leiXing == LianJieLeiXing.TcpServer && _tcpServer.ClientCount == 0)
+        {
+            MessageBox.ShowAsync("当前还没有客户端接入，无法发送文件。", "提示",
+                MessageBoxIcon.Warning, MessageBoxButton.OK);
+            return;
+        }
+
+        // 已打开发送文件窗口时直接激活，避免重复创建
+        if (_wj != null)
+        {
+            _wj.Activate();
+            return;
+        }
+
+        IReadOnlyList<IStorageFile> wenJian;
+        try
+        {
+            wenJian = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "选择要发送的文件",
+                AllowMultiple = false,
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.ShowAsync("打开文件选择对话框失败：" + ex.Message, "发送文件",
+                MessageBoxIcon.Error, MessageBoxButton.OK);
+            return;
+        }
+
+        if (wenJian.Count == 0) return;
+
+        // 选择文件期间连接可能已断开，创建窗口前再确认一次
+        if (!IsChannelOpen())
+        {
+            MessageBox.ShowAsync("连接已断开，无法发送文件。", "未连接",
+                MessageBoxIcon.Warning, MessageBoxButton.OK);
+            return;
+        }
+
+        string? luJing = wenJian[0].TryGetLocalPath();
+        if (string.IsNullOrEmpty(luJing) || !File.Exists(luJing))
+        {
+            MessageBox.ShowAsync("无法获取所选文件的本地路径。", "发送文件",
+                MessageBoxIcon.Warning, MessageBoxButton.OK);
+            return;
+        }
+
+        _wj = new FaSongWenJian(luJing, XinJianWenJianTongDao(), WenJianFaSongWanCheng, _xieYiJieShou);
+        _wj.Closed += (_, _) => _wj = null;
+        _wj.Show(this);
+    }
+
+    /// <summary>
+    /// [新增 V1.6.0] 构造发送文件窗口使用的通道上下文：
+    /// 普通发送走当前连接；协议发送在 TCP 服务端按目标客户端单播；并提供客户端列表与发送前检查。
+    /// </summary>
+    private WenJianTongDao XinJianWenJianTongDao() => new()
+    {
+        // 裸流发送：当前连接直接发（TCP 服务端仍是广播）
+        FaSong = SendRawBytes,
+
+        // 协议发送：TCP 服务端按目标客户端单播，其余连接走普通发送
+        FaSongXieYi = (keHu, data) =>
+            _leiXing == LianJieLeiXing.TcpServer && !string.IsNullOrEmpty(keHu)
+                ? _tcpServer.SendTo(keHu, data)
+                : SendRawBytes(data),
+
+        // 连接方式实时判断：窗口打开期间切换到/离开 TCP 服务端时，目标客户端选择同步生效
+        ShiTcpFuWuDuan = () => _leiXing == LianJieLeiXing.TcpServer,
+        KeHuLieBiao = () => _tcpServer.ClientList,
+        // 协议传输是点对点协议：TCP 服务端必须选定一个仍在线目标客户端
+        JianCha = keHu =>
+        {
+            if (_leiXing == LianJieLeiXing.Wu)
+                return "连接已断开，无法协议传输。";
+            if (_leiXing != LianJieLeiXing.TcpServer) return null;
+
+            int keHuShu = _tcpServer.ClientCount;
+            if (keHuShu == 0)
+                return "当前没有客户端接入，无法协议传输。";
+            if (string.IsNullOrEmpty(keHu))
+                return "协议传输需要先在“目标客户端”中选择一个客户端。";
+            if (!_tcpServer.HasClient(keHu))
+                return $"目标客户端 {keHu} 已断开，请点击“刷新”后重新选择。";
+            return null;
+        },
+
+        // 只把目标客户端的接收数据交给 ACK 解析
+        SheZhiAckMuBiao = keHu => _xieYiJieShou.MuBiao = keHu,
+    };
+
+    /// <summary>[新增 V1.4.0] 文件发送完成：按“显示发送”开关在接收区回显一条记录</summary>
+    private void WenJianFaSongWanCheng(string zhaiYao)
+    {
+        if (!_showSend) return;
+
+        string line = _displayTime
+            ? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + " 发送文件=> " + zhaiYao + Environment.NewLine
+            : "发送文件=> " + zhaiYao + Environment.NewLine;
+
+        _model.DisplayText += line;
+        AppendLogLine(line);
     }
 
     /// <summary>
@@ -1582,6 +1753,18 @@ public partial class MainWindow : UrsaWindow
             // 关闭校验窗口
             _jy?.Close();
             _jy = null;
+            // 关闭 Modbus 工具窗口
+            _mb?.Close();
+            _mb = null;
+            // 关闭关于软件窗口
+            _gy?.Close();
+            _gy = null;
+            // 关闭发送文件窗口（发送中的循环会在窗口关闭时取消）
+            _wj?.Close();
+            _wj = null;
+            // 结束协议接管，恢复正常的接收显示
+            _xieYiJieShou.Stop();
+            _xieYiJieShou.MuBiao = null;
             // 已有后台释放在进行（点了“关闭串口/断开”马上关窗）时不再重复释放，随进程退出由系统回收
             if (!_closing)
             {
@@ -1615,9 +1798,80 @@ public partial class MainWindow : UrsaWindow
             return;
         }
 
-        _jy = new JiaoYan();
+        _jy = new JiaoYan
+        {
+            // ===== [新增 V1.4.0] 导入来源：主窗口单条发送内容 + 当前“文本 / HEX”发送状态 =====
+            // lambda 读取实时值，校验窗口打开期间改了内容再点“导入”也能拿到最新数据
+            DaoRuYuan = () => (_model.SendText ?? string.Empty, !_sendText),
+            // ===== [新增 V1.6.0] 校验窗口的输入内容与 HEX / 字符模式送回主窗口发送框 =====
+            FaSongDaoZhuChuangKou = SheZhiZhuFaSongKuang,
+        };
         _jy.Closed += (_, _) => _jy = null;
         _jy.Show();
+    }
+
+    /// <summary>
+    /// [新增 V1.6.0] 打开 Modbus 工具窗口：已打开时直接激活，避免重复创建
+    /// </summary>
+    private void Button_OnClick7(object? sender, RoutedEventArgs e)
+    {
+        if (_mb != null)
+        {
+            _mb.Activate();
+            return;
+        }
+
+        _mb = new Modbus
+        {
+            // 生成的 HEX 报文直接填入主窗口单条发送框，并切到 HEX 发送
+            FaSongDaoZhuChuangKou = SheZhiZhuFaSongKuang,
+        };
+        _mb.Closed += (_, _) => _mb = null;
+        _mb.Show();
+    }
+
+    /// <summary>
+    /// [新增 V1.6.0] 打开“关于软件”窗口：已打开时直接激活
+    /// </summary>
+    private void Button_OnClick8(object? sender, RoutedEventArgs e)
+    {
+        if (_gy != null)
+        {
+            _gy.Activate();
+            return;
+        }
+
+        _gy = new GuanYu();
+        _gy.Closed += (_, _) => _gy = null;
+        _gy.Show();
+    }
+
+    /// <summary>[新增 V1.6.0] 把 Modbus 生成的报文填入单条发送框（HEX 发送）</summary>
+    private void SheZhiZhuFaSongKuang(string hex)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return;
+
+        _model.SendText = hex;
+        WenBenFaSong.IsChecked = false; // HEX 发送
+        // Modbus 帧末尾不能追加 CR LF，否则 CRC / MBAP 长度都会失效
+        JiaHuiCheHuanHang.IsChecked = false;
+        DanTiaoYe.IsChecked = true;
+        ApplySendPage(0);
+        Activate();
+    }
+
+    /// <summary>
+    /// [新增 V1.6.0] 把校验窗口的输入内容与 HEX / 字符模式填入单条发送框
+    /// </summary>
+    private void SheZhiZhuFaSongKuang(string wenBen, bool shiHex)
+    {
+        if (string.IsNullOrWhiteSpace(wenBen)) return;
+
+        _model.SendText = wenBen;
+        WenBenFaSong.IsChecked = !shiHex;
+        DanTiaoYe.IsChecked = true;
+        ApplySendPage(0);
+        Activate();
     }
 }
 

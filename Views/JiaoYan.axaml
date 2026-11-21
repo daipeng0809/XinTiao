@@ -88,10 +88,20 @@
                                  PlaceholderText="例如：01 03 00 00 00 0A"
                                  TextChanged="ShuRuKuang_OnTextChanged" />
 
-                        <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+                        <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,6,0,0">
                             <TextBlock Name="ShuRuXinXi" Text="共 0 字节" FontSize="12" Opacity="0.6"
                                        VerticalAlignment="Center" TextWrapping="Wrap" />
-                            <Button Grid.Column="1" Content="清空" Classes="rowAct" Margin="8,0,0,0"
+                            <!-- ===== [新增 V1.6.0] 把输入内容与 HEX / 字符模式送到主窗口发送框 ===== -->
+                            <Button Grid.Column="1" Content="发送到主窗口" Classes="rowAct" Margin="8,0,0,0"
+                                    Theme="{StaticResource OutlineButton}"
+                                    ToolTip.Tip="把当前输入内容与 HEX / 字符模式填入主窗口发送框"
+                                    Click="FaSongDaoZhu_OnClick" />
+                            <!-- ===== [新增 V1.4.0] 导入主窗口发送区的内容与文本 / HEX 状态 ===== -->
+                            <Button Grid.Column="2" Content="导入" Classes="rowAct" Margin="8,0,0,0"
+                                    Theme="{StaticResource OutlineButton}"
+                                    ToolTip.Tip="把主窗口“单条数据”发送框中的内容与当前文本 / HEX 状态导入到这里"
+                                    Click="DaoRu_OnClick" />
+                            <Button Grid.Column="3" Content="清空" Classes="rowAct" Margin="8,0,0,0"
                                     Theme="{StaticResource OutlineButton}" Click="QingKong_OnClick" />
                         </Grid>
                     </Grid>

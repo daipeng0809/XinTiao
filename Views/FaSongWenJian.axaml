@@ -1,0 +1,168 @@
+<u:UrsaWindow xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+              xmlns:u="https://irihi.tech/ursa"
+              mc:Ignorable="d" d:DesignWidth="620" d:DesignHeight="600"
+              Width="620" Height="600" MinWidth="560" MinHeight="560"
+              x:Class="XinTiao.Views.FaSongWenJian"
+              Icon="/Assets/wk-256x256.ico"
+              WindowStartupLocation="CenterOwner"
+              FontFamily="{DynamicResource AppFontFamily}"
+              Background="{DynamicResource AppWindowBackground}"
+              Title="发送文件">
+
+    <u:UrsaWindow.Styles>
+        <Style Selector="TextBlock.groupTitle">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Opacity" Value="0.65" />
+        </Style>
+        <Style Selector="TextBlock.fieldLabel">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Opacity" Value="0.85" />
+        </Style>
+        <Style Selector="Button.act">
+            <Setter Property="MinWidth" Value="98" />
+            <Setter Property="MinHeight" Value="32" />
+        </Style>
+        <Style Selector="TextBlock.hint">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Opacity" Value="0.6" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+    </u:UrsaWindow.Styles>
+
+    <!-- 首行 32px 为 UrsaWindow 自绘标题栏留白，左侧放窗口标题、右侧留给标题栏按钮 -->
+    <Grid RowDefinitions="32,*">
+        <Border Grid.Row="0" Padding="14,0" BorderThickness="0,0,0,1" BorderBrush="#22808080">
+            <Grid ColumnDefinitions="Auto,*,100">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Border Width="4" Height="18" CornerRadius="2" Background="{DynamicResource AppAccent}" />
+                    <TextBlock Text="发送文件" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" RowDefinitions="Auto,8,*" Margin="10,0,10,10">
+
+            <!-- ===================== 文件信息 ===================== -->
+            <Border Grid.Row="0" Theme="{StaticResource CardBorder}" Padding="10">
+                <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="56,*">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Classes="fieldLabel" Text="文件名" />
+                    <SelectableTextBlock Grid.Row="0" Grid.Column="1" Name="WenJianMing"
+                                         FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Classes="fieldLabel" Margin="0,6,0,0" Text="路径" />
+                    <SelectableTextBlock Grid.Row="1" Grid.Column="1" Name="WenJianLuJing"
+                                         Margin="0,6,0,0" FontSize="12" Opacity="0.7" TextWrapping="Wrap" />
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Classes="fieldLabel" Margin="0,6,0,0" Text="大小" />
+                    <TextBlock Grid.Row="2" Grid.Column="1" Name="WenJianDaXiao"
+                               Margin="0,6,0,0" FontSize="12" Opacity="0.7" TextWrapping="Wrap" />
+                </Grid>
+            </Border>
+
+            <!-- ===================== 发送选项 + 进度 + 按钮 ===================== -->
+            <Border Grid.Row="2" Theme="{StaticResource CardBorder}" Padding="10">
+                <Grid RowDefinitions="Auto,8,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto">
+                    <TextBlock Classes="groupTitle" Text="发送选项" />
+
+                    <!-- ===== [新增 V1.5.0] 传输方式：裸流 / 协议 ===== -->
+                    <Grid Grid.Row="2" ColumnDefinitions="84,*">
+                        <TextBlock Classes="fieldLabel" Text="传输方式" />
+                        <ComboBox Grid.Column="1" Name="ChuanShuFangShi" Height="30" SelectedIndex="0"
+                                  HorizontalAlignment="Stretch"
+                                  ToolTip.Tip="裸流：按块直接发送；协议：每帧带序号与 CRC，需对端回 ACK，超时自动重传"
+                                  SelectionChanged="ChuanShuFangShi_OnSelectionChanged">
+                            <ComboBoxItem Tag="raw">裸流发送（无协议）</ComboBoxItem>
+                            <ComboBoxItem Tag="protocol">协议传输（序号 + CRC + ACK + 重传）</ComboBoxItem>
+                        </ComboBox>
+                    </Grid>
+
+                    <!-- ===== [新增 V1.6.0] 目标客户端：TCP 服务端协议传输时单播，只认该客户端的 ACK ===== -->
+                    <Grid Grid.Row="3" Name="MuBiaoXing" ColumnDefinitions="84,*,Auto" Margin="0,8,0,0">
+                        <TextBlock Classes="fieldLabel" Text="目标客户端" />
+                        <ComboBox Grid.Column="1" Name="MuBiaoKeHu" Height="30" HorizontalAlignment="Stretch"
+                                  ToolTip.Tip="协议传输只把数据发给该客户端，并且只接受它的 ACK；其余客户端的数据照常显示" />
+                        <Button Grid.Column="2" Name="ShuaXinKeHuAnNiu" Content="刷新" Classes="rowAct"
+                                Margin="8,0,0,0" Theme="{StaticResource OutlineButton}"
+                                ToolTip.Tip="重新读取当前已连接的客户端列表"
+                                Click="ShuaXinKeHu_OnClick" />
+                    </Grid>
+
+                    <Grid Grid.Row="4" ColumnDefinitions="84,*" Margin="0,8,0,0">
+                        <TextBlock Classes="fieldLabel" Text="发送方式" />
+                        <ComboBox Grid.Column="1" Name="FaSongFangShi" Height="30" SelectedIndex="0"
+                                  HorizontalAlignment="Stretch"
+                                  SelectionChanged="FaSongFangShi_OnSelectionChanged">
+                            <ComboBoxItem Tag="raw">原始二进制</ComboBoxItem>
+                            <ComboBoxItem Tag="hex">HEX 文本</ComboBoxItem>
+                        </ComboBox>
+                    </Grid>
+
+                    <Grid Grid.Row="5" ColumnDefinitions="84,*" Margin="0,8,0,0">
+                        <TextBlock Classes="fieldLabel" Text="分块大小" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                            <NumericUpDown Name="FenKuaiDaXiao" Width="140" Height="30"
+                                           Minimum="1" Maximum="65536" Increment="256"
+                                           FormatString="0" Value="1024" />
+                            <TextBlock Text="字节" FontSize="12" Opacity="0.7" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid Grid.Row="6" ColumnDefinitions="84,*" Margin="0,8,0,0">
+                        <TextBlock Classes="fieldLabel" Text="分块间隔" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                            <NumericUpDown Name="FenKuaiJianGe" Width="140" Height="30"
+                                           Minimum="0" Maximum="60000" Increment="10"
+                                           FormatString="0" Value="20" />
+                            <TextBlock Text="毫秒" FontSize="12" Opacity="0.7" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- ===== [新增 V1.5.0] 协议参数：ACK 超时 + 最大重传次数 ===== -->
+                    <Grid Grid.Row="7" Name="XieYiCanShu" ColumnDefinitions="84,Auto,Auto,*,Auto,Auto,Auto"
+                          Margin="0,8,0,0">
+                        <TextBlock Classes="fieldLabel" Text="ACK 超时" />
+                        <NumericUpDown Grid.Column="1" Name="XieYiChaoShi" Width="110" Height="30"
+                                       Minimum="50" Maximum="60000" Increment="100"
+                                       FormatString="0" Value="1000"
+                                       ToolTip.Tip="发出数据帧后等待同序号 ACK 的时间" />
+                        <TextBlock Grid.Column="2" Text="毫秒" FontSize="12" Opacity="0.7"
+                                   VerticalAlignment="Center" Margin="6,0,0,0" />
+                        <TextBlock Grid.Column="4" Classes="fieldLabel" Text="最大重传"
+                                   VerticalAlignment="Center" />
+                        <NumericUpDown Grid.Column="5" Name="ChongChuanCiShu" Width="80" Height="30"
+                                       Minimum="0" Maximum="20" Increment="1"
+                                       FormatString="0" Value="3"
+                                       ToolTip.Tip="某一帧在超时（或收到 NAK）后最多重发的次数，0 表示不重传" />
+                        <TextBlock Grid.Column="6" Text="次" FontSize="12" Opacity="0.7"
+                                   VerticalAlignment="Center" Margin="6,0,0,0" />
+                    </Grid>
+
+                    <ToggleSwitch Grid.Row="8" Name="JiaHuiChe" Margin="0,8,0,0" IsChecked="False"
+                                  OnContent="每块末尾加 CR LF" OffContent="不加回车换行"
+                                  ToolTip.Tip="仅 HEX 文本模式有效：每个分块末尾追加回车换行（0D 0A）" />
+
+                    <TextBlock Grid.Row="9" Name="FangShiShuoMing" Classes="hint" Margin="0,6,0,0" />
+
+                    <StackPanel Grid.Row="10" VerticalAlignment="Bottom" Spacing="6" Margin="0,10,0,0">
+                        <ProgressBar Name="JinDuTiao" Minimum="0" Maximum="100" Value="0" Height="6" />
+                        <TextBlock Name="JinDuXinXi" Classes="hint" Text="就绪，点击“发送”开始。" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="11" Orientation="Horizontal" Spacing="10"
+                                HorizontalAlignment="Right" Margin="0,10,0,0">
+                        <Button Name="FaSongAnNiu" Content="发    送" Classes="Success act"
+                                Theme="{StaticResource SolidButton}" Click="FaSong_OnClick" />
+                        <Button Name="TingZhiAnNiu" Content="停    止" Classes="Warning act" IsEnabled="False"
+                                Theme="{StaticResource SolidButton}" Click="TingZhi_OnClick" />
+                        <Button Name="GuanBiAnNiu" Content="关    闭" Classes="act"
+                                Theme="{StaticResource OutlineButton}" Click="GuanBi_OnClick" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</u:UrsaWindow>

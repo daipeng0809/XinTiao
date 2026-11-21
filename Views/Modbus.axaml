@@ -1,0 +1,182 @@
+<u:UrsaWindow xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+              xmlns:u="https://irihi.tech/ursa"
+              mc:Ignorable="d" d:DesignWidth="880" d:DesignHeight="620"
+              Width="880" Height="620" MinWidth="780" MinHeight="560"
+              x:Class="XinTiao.Views.Modbus"
+              Icon="/Assets/wk-256x256.ico"
+              WindowStartupLocation="CenterOwner"
+              FontFamily="{DynamicResource AppFontFamily}"
+              Background="{DynamicResource AppWindowBackground}"
+              Title="Modbus 工具">
+
+    <u:UrsaWindow.Styles>
+        <Style Selector="TextBlock.groupTitle">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Opacity" Value="0.65" />
+        </Style>
+        <Style Selector="TextBlock.fieldLabel">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Opacity" Value="0.85" />
+        </Style>
+        <Style Selector="TextBlock.hint">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Opacity" Value="0.6" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style Selector="Button.act">
+            <Setter Property="MinWidth" Value="110" />
+            <Setter Property="MinHeight" Value="32" />
+        </Style>
+        <Style Selector="Button.rowAct">
+            <Setter Property="MinWidth" Value="56" />
+            <Setter Property="MinHeight" Value="26" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="SelectableTextBlock.mono">
+            <Setter Property="FontFamily" Value="Consolas,DejaVu Sans Mono,Cascadia Mono" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style Selector="TextBlock.statusError">
+            <Setter Property="Foreground" Value="#D64545" />
+        </Style>
+    </u:UrsaWindow.Styles>
+
+    <!-- 首行 32px 为 UrsaWindow 自绘标题栏留白 -->
+    <Grid RowDefinitions="32,*">
+        <Border Grid.Row="0" Padding="14,0" BorderThickness="0,0,0,1" BorderBrush="#22808080">
+            <Grid ColumnDefinitions="Auto,*,100">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Border Width="4" Height="18" CornerRadius="2" Background="{DynamicResource AppAccent}" />
+                    <TextBlock Text="Modbus 工具" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <TextBlock Text="RTU / TCP 报文生成与解析" FontSize="11" Opacity="0.55" VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" ColumnDefinitions="400,8,*" Margin="10,0,10,10">
+
+            <!-- ===================== 左：报文生成 ===================== -->
+            <Border Grid.Column="0" Theme="{StaticResource CardBorder}" Padding="10">
+                <Grid RowDefinitions="Auto,8,*,8,Auto">
+                    <TextBlock Text="报文生成" FontWeight="SemiBold" />
+
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Spacing="8">
+                            <Grid ColumnDefinitions="84,*">
+                                <TextBlock Classes="fieldLabel" Text="协议" />
+                                <ComboBox Grid.Column="1" Name="FangShi" Height="30" SelectedIndex="0"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBoxItem Tag="rtu">Modbus RTU（CRC16）</ComboBoxItem>
+                                    <ComboBoxItem Tag="tcp">Modbus TCP（MBAP）</ComboBoxItem>
+                                </ComboBox>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="84,*">
+                                <TextBlock Name="DiZhiBiaoQian" Classes="fieldLabel" Text="从站地址" />
+                                <NumericUpDown Grid.Column="1" Name="DiZhi" Height="30"
+                                               Minimum="0" Maximum="247" FormatString="0" Value="1" />
+                            </Grid>
+
+                            <Grid Name="ShiWuHaoXing" ColumnDefinitions="84,*" IsVisible="False">
+                                <TextBlock Classes="fieldLabel" Text="事务号" />
+                                <NumericUpDown Grid.Column="1" Name="ShiWuHao" Height="30"
+                                               Minimum="0" Maximum="65535" FormatString="0" Value="1"
+                                               ToolTip.Tip="Modbus TCP 的 MBAP 事务号，响应会原样带回" />
+                            </Grid>
+
+                            <Grid ColumnDefinitions="84,*">
+                                <TextBlock Classes="fieldLabel" Text="功能码" />
+                                <ComboBox Grid.Column="1" Name="GongNeng" Height="30" SelectedIndex="2"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBoxItem Tag="01">01 读线圈</ComboBoxItem>
+                                    <ComboBoxItem Tag="02">02 读离散输入</ComboBoxItem>
+                                    <ComboBoxItem Tag="03">03 读保持寄存器</ComboBoxItem>
+                                    <ComboBoxItem Tag="04">04 读输入寄存器</ComboBoxItem>
+                                    <ComboBoxItem Tag="05">05 写单个线圈</ComboBoxItem>
+                                    <ComboBoxItem Tag="06">06 写单个寄存器</ComboBoxItem>
+                                    <ComboBoxItem Tag="0F">0F 写多个线圈</ComboBoxItem>
+                                    <ComboBoxItem Tag="10">10 写多个寄存器</ComboBoxItem>
+                                </ComboBox>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="84,*">
+                                <TextBlock Classes="fieldLabel" Text="起始地址" />
+                                <NumericUpDown Grid.Column="1" Name="QiShiDiZhi" Height="30"
+                                               Minimum="0" Maximum="65535" FormatString="0" Value="0" />
+                            </Grid>
+
+                            <Grid Name="ShuLiangXing" ColumnDefinitions="84,*">
+                                <TextBlock Classes="fieldLabel" Text="数量" />
+                                <NumericUpDown Grid.Column="1" Name="ShuLiang" Height="30"
+                                               Minimum="1" Maximum="2000" FormatString="0" Value="1" />
+                            </Grid>
+
+                            <Grid Name="XieRuZhiXing" ColumnDefinitions="84,*" IsVisible="False">
+                                <TextBlock Classes="fieldLabel" Text="写入值" />
+                                <NumericUpDown Grid.Column="1" Name="XieRuZhi" Height="30"
+                                               Minimum="0" Maximum="65535" FormatString="0" Value="0"
+                                               ToolTip.Tip="05：0 断开 / 1 闭合；06：寄存器值（0~65535）" />
+                            </Grid>
+
+                            <StackPanel Name="DuoXieXing" Spacing="4" IsVisible="False">
+                                <Grid ColumnDefinitions="84,*">
+                                    <TextBlock Classes="fieldLabel" Text="多写数据" />
+                                    <TextBox Grid.Column="1" Name="DuoXieShuJu" Height="30" Classes="ClearButton"
+                                             VerticalContentAlignment="Center"
+                                             PlaceholderText="HEX，如：CD 01 或 00 0A 00 0B" />
+                                </Grid>
+                                <TextBlock Name="DuoXieShuoMing" Classes="hint" Margin="84,0,0,0" />
+                            </StackPanel>
+
+                            <TextBlock Classes="groupTitle" Text="生成结果" Margin="0,4,0,0" />
+                            <SelectableTextBlock Name="ShengChengJieGuo" Classes="mono"
+                                                 TextWrapping="Wrap" Text="—" />
+                            <TextBlock Name="ShengChengTiShi" FontSize="12" Opacity="0.6"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                        <Button Content="复制报文" Classes="rowAct"
+                                Theme="{StaticResource OutlineButton}" Click="FuZhi_OnClick" />
+                        <Button Content="发送到主窗口" Classes="act"
+                                Theme="{StaticResource SolidButton}" Click="FaSongDaoZhu_OnClick" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ===================== 右：报文解析 ===================== -->
+            <Border Grid.Column="2" Theme="{StaticResource CardBorder}" Padding="10">
+                <Grid RowDefinitions="Auto,8,Auto,8,*,8,Auto,8,Auto,8,*">
+                    <TextBlock Text="报文解析" FontWeight="SemiBold" />
+
+                    <TextBlock Grid.Row="2" Classes="hint"
+                               Text="粘贴完整的响应报文（HEX）。协议按左侧选择：RTU 校验 CRC16，TCP 校验 MBAP 长度与协议标识。" />
+
+                    <TextBox Grid.Row="4" Name="JieXiShuRu" AcceptsReturn="True" TextWrapping="Wrap"
+                             VerticalAlignment="Stretch" Height="NaN" MinHeight="120"
+                             VerticalContentAlignment="Top" Classes="TextArea ClearButton"
+                             PlaceholderText="例如：01 03 04 00 0A 01 02 2A 8D" />
+
+                    <StackPanel Grid.Row="6" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                        <Button Content="解析" Classes="rowAct"
+                                Theme="{StaticResource SolidButton}" Click="JieXi_OnClick" />
+                        <Button Content="清空" Classes="rowAct"
+                                Theme="{StaticResource OutlineButton}" Click="JieXiQingKong_OnClick" />
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="8" Classes="groupTitle" Text="解析结果" />
+
+                    <SelectableTextBlock Grid.Row="10" Name="JieXiJieGuo" Classes="mono"
+                                         TextWrapping="Wrap" Text="—" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</u:UrsaWindow>

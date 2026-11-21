@@ -8,7 +8,7 @@ public class AppConfig
     [JsonPropertyName("AppName")]
     public string AppName { get; set; } = "信息调试助手";
     [JsonPropertyName("AppVersion")]
-    public string AppVersion { get; set; } = "V1.3.0";
+    public string AppVersion { get; set; } = "V1.6.0";
     
     [JsonPropertyName("ThemeVariant")]
     public string ThemeVariant { get; set; } = "Default";
@@ -86,6 +86,24 @@ public class AppConfig
     // ===== [新增 V1.1.0] 多行发送内容（每行独立的 HEX 与定时间隔） =====
     [JsonPropertyName("MultiSendItems")]
     public List<SendItemConfig> MultiSendItems { get; set; } = new();
+
+    // ===== [新增 V1.4.0] 发送文件：发送方式 / 分块大小 / 分块间隔 / HEX 文本每块追加 CR LF =====
+    [JsonPropertyName("FileSendAsHexText")]
+    public bool FileSendAsHexText { get; set; }//true HEX 文本发送，false 原始二进制发送
+    [JsonPropertyName("FileSendChunkSize")]
+    public int FileSendChunkSize { get; set; } = 1024;//每块字节数
+    [JsonPropertyName("FileSendInterval")]
+    public int FileSendInterval { get; set; } = 20;//块与块之间的间隔（毫秒）
+    [JsonPropertyName("FileSendAppendCrLf")]
+    public bool FileSendAppendCrLf { get; set; }//HEX 文本模式下每块末尾追加 CR LF
+
+    // ===== [新增 V1.5.0] 文件协议传输：是否启用 / ACK 超时 / 最大重传次数 =====
+    [JsonPropertyName("FileSendUseProtocol")]
+    public bool FileSendUseProtocol { get; set; }//true 协议传输（序号 + CRC + ACK + 重传），false 裸流发送
+    [JsonPropertyName("FileSendAckTimeout")]
+    public int FileSendAckTimeout { get; set; } = 1000;//等待同序号 ACK 的超时（毫秒）
+    [JsonPropertyName("FileSendRetryCount")]
+    public int FileSendRetryCount { get; set; } = 3;//单帧最大重传次数
 }
 
 /// <summary>

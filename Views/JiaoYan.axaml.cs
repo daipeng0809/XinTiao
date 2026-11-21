@@ -41,6 +41,16 @@ public partial class JiaoYan : UrsaWindow
     /// <summary>重建“校验方式”下拉框时屏蔽选择事件</summary>
     private bool _chongJianFangShi;
 
+    /// <summary>
+    /// [新增 V1.4.0] 导入来源：由主窗口提供“单条发送内容 + 是否 HEX 发送”
+    /// </summary>
+    public Func<(string Text, bool IsHex)>? DaoRuYuan { get; set; }
+
+    /// <summary>
+    /// [新增 V1.6.0] 发送到主窗口：把输入内容与 HEX / 字符模式送到主窗口发送框（由主窗口注入）
+    /// </summary>
+    public Action<string, bool>? FaSongDaoZhuChuangKou { get; set; }
+
     public JiaoYan()
     {
         InitializeComponent();
@@ -102,6 +112,53 @@ public partial class JiaoYan : UrsaWindow
     private void ShuRuKuang_OnTextChanged(object? sender, TextChangedEventArgs e)
     {
         UpdateJieGuo();
+    }
+
+    /// <summary>[新增 V1.4.0] 导入主窗口发送框中的内容与文本 / HEX 状态</summary>
+    private void DaoRu_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DaoRuYuan is null)
+        {
+            MessageBox.ShowAsync("没有可导入的数据来源。", "导入", MessageBoxIcon.Warning, MessageBoxButton.OK);
+            return;
+        }
+
+        (string text, bool isHex) = DaoRuYuan();
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            MessageBox.ShowAsync("主窗口发送区内容为空，没有可导入的数据。", "导入",
+                MessageBoxIcon.Warning, MessageBoxButton.OK);
+            return;
+        }
+
+        // 先切输入模式（会刷新提示），再填内容；两次事件都会重算，末尾再兜底刷新一次
+        HeXinXi.IsChecked = isHex;
+        ShuRuKuang.Text = text;
+        UpdateJieGuo();
+
+        ShuRuKuang.CaretIndex = ShuRuKuang.Text?.Length ?? 0;
+        ShuRuKuang.Focus();
+    }
+
+    /// <summary>[新增 V1.6.0] 把输入内容与当前 HEX / 字符模式送到主窗口发送框</summary>
+    private void FaSongDaoZhu_OnClick(object? sender, RoutedEventArgs e)
+    {
+        string wenBen = ShuRuKuang.Text ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(wenBen))
+        {
+            MessageBox.ShowAsync("输入内容为空，没有可发送的数据。", "发送到主窗口",
+                MessageBoxIcon.Warning, MessageBoxButton.OK);
+            return;
+        }
+
+        if (FaSongDaoZhuChuangKou is null)
+        {
+            MessageBox.ShowAsync("没有可用的主窗口发送框。", "发送到主窗口",
+                MessageBoxIcon.Warning, MessageBoxButton.OK);
+            return;
+        }
+
+        FaSongDaoZhuChuangKou(wenBen, HeXinXi.IsChecked == true);
     }
 
     /// <summary>清空输入</summary>

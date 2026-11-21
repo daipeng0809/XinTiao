@@ -1,0 +1,108 @@
+<u:UrsaWindow xmlns="https://github.com/avaloniaui"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+              xmlns:u="https://irihi.tech/ursa"
+              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="580"
+              Width="600" Height="580" MinWidth="520" MinHeight="500"
+              x:Class="XinTiao.Views.GuanYu"
+              Icon="/Assets/wk-256x256.ico"
+              WindowStartupLocation="CenterOwner"
+              FontFamily="{DynamicResource AppFontFamily}"
+              Background="{DynamicResource AppWindowBackground}"
+              Title="关于软件">
+
+    <u:UrsaWindow.Styles>
+        <Style Selector="TextBlock.groupTitle">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Opacity" Value="0.65" />
+        </Style>
+        <Style Selector="TextBlock.body">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Opacity" Value="0.8" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="LineHeight" Value="19" />
+        </Style>
+        <Style Selector="Button.act">
+            <Setter Property="MinWidth" Value="98" />
+            <Setter Property="MinHeight" Value="32" />
+        </Style>
+        <Style Selector="Button.rowAct">
+            <Setter Property="MinWidth" Value="80" />
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="Padding" Value="10,2" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+    </u:UrsaWindow.Styles>
+
+    <!-- 首行 32px 为 UrsaWindow 自绘标题栏留白 -->
+    <Grid RowDefinitions="32,*">
+        <Border Grid.Row="0" Padding="14,0" BorderThickness="0,0,0,1" BorderBrush="#22808080">
+            <Grid ColumnDefinitions="Auto,*,100">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Border Width="4" Height="18" CornerRadius="2" Background="{DynamicResource AppAccent}" />
+                    <TextBlock Text="关于软件" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" RowDefinitions="Auto,8,*,8,Auto" Margin="10,0,10,10">
+
+            <!-- ===================== 软件信息 ===================== -->
+            <Border Grid.Row="0" Theme="{StaticResource CardBorder}" Padding="14">
+                <Grid ColumnDefinitions="Auto,16,*">
+                    <Image Grid.Column="0" Source="/Assets/wk.png" Width="72" Height="72"
+                           VerticalAlignment="Center" />
+
+                    <StackPanel Grid.Column="2" Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="信息调试助手" FontSize="18" FontWeight="SemiBold" />
+                        <TextBlock Name="BanBen" Text="版本 V1.6.0" FontSize="12" Opacity="0.6" />
+                        <TextBlock Text="串口 / TCP / UDP · 文件协议传输 · Modbus 调试工具"
+                                   FontSize="12" Opacity="0.7" TextWrapping="Wrap" />
+                        <TextBlock Text="作者：大鹏鹏" FontSize="12" Margin="0,4,0,0" />
+                        <SelectableTextBlock Text="邮箱：daipeng0809@hotmail.com" FontSize="12" Opacity="0.9" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ===================== 声明 ===================== -->
+            <Border Grid.Row="2" Theme="{StaticResource CardBorder}" Padding="12">
+                <Grid RowDefinitions="Auto,6,*">
+                    <TextBlock Text="声明" FontWeight="SemiBold" />
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="groupTitle" Text="版权声明" />
+                            <TextBlock Classes="body"
+                                       Text="本软件（信息调试助手）版权归 大鹏鹏 所有。Copyright © 2026 大鹏鹏. All rights reserved." />
+
+                            <TextBlock Classes="groupTitle" Text="免责声明" />
+                            <TextBlock Classes="body"
+                                       Text="本软件按“现状”提供，不附带任何明示或暗示的担保。使用本软件进行设备调试、参数写入、数据发送等操作产生的风险（包括但不限于设备异常、数据丢失、生产损失）由使用者自行承担。请在合法合规的前提下使用；重要设备与数据请提前备份，并在正式环境操作前充分验证。" />
+
+                            <TextBlock Classes="groupTitle" Text="数据与隐私" />
+                            <TextBlock Classes="body"
+                                       Text="软件在本机运行，不上传任何数据。配置、接收数据与日志只保存在程序目录（不可写时回退到用户配置目录），卸载或删除目录即可清除。" />
+
+                            <TextBlock Classes="groupTitle" Text="第三方组件" />
+                            <TextBlock Classes="body"
+                                       Text="界面基于 Avalonia、Semi.Avalonia、Irihi.Ursa；MVVM 使用 CommunityToolkit.Mvvm；串口通信使用 System.IO.Ports。上述组件版权归各自作者所有。" />
+
+                            <TextBlock Classes="groupTitle" Text="反馈与联系" />
+                            <TextBlock Classes="body"
+                                       Text="作者：大鹏鹏　邮箱：daipeng0809@hotmail.com" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                <Button Content="复制邮箱" Classes="rowAct"
+                        Theme="{StaticResource OutlineButton}" Click="FuZhiYouXiang_OnClick" />
+                <Button Content="关    闭" Classes="act"
+                        Theme="{StaticResource SolidButton}" Click="GuanBi_OnClick" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</u:UrsaWindow>
